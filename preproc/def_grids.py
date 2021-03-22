@@ -2,6 +2,29 @@ import numpy as np
 import sys
 
 #====================================================================================================
+def grid_bounds(region='Amundsen'):
+   """ Gives minimum and maximum longitude and latitude for the common MISOMIP2 grid
+
+       region: 'Amundsen' (default), 'Weddell'
+
+       exemple: [lonmin,lonmax,latmin,latmax] = grid_bounds(region='Amundsen')
+   """
+   if ( region == 'Amundsen' ):
+     longitude_min = -140.0
+     longitude_max = -90.0
+     latitude_min = -76.0
+     latitude_max = -69.0
+   elif ( region == 'Weddell' ):
+     longitude_min = -90.0
+     longitude_max = 0.0
+     latitude_min = -85.0
+     latitude_max = -68.9
+   else:
+     sys.exit("~!@#$%^* error : region is not defined, choose either 'Amundsen' or 'Weddell'")
+
+   return [longitude_min,longitude_max,latitude_min,latitude_max]
+
+#====================================================================================================
 def generate_3d_grid(region='Amundsen'):
    """Generates (longitude, latitude, depth) of the common MISOMIP2 3d grid
 
@@ -10,13 +33,15 @@ def generate_3d_grid(region='Amundsen'):
       exemple: [lon,lat,depth]=generate_3d_grid(region='Amundsen')
    """
 
+   [lonmin,lonmax,latmin,latmax] = grid_bounds(region=region)
+
    if ( region == 'Amundsen' ):
-     longitude=np.arange(-140.0,-89.9,0.1)
-     latitude=np.arange(-76.0,-69.+1./30.,1./30.)
+     longitude=np.arange(lonmin,lonmax+0.1,0.1)
+     latitude=np.arange(latmin,latmax+1./30.,1./30.)
      depth=np.array([0., 100., 200., 300., 400., 500., 600., 700., 800., 900., 1000., 1500.])
    elif ( region == 'Weddell' ):
-     longitude=np.arange(-90.0,0.1,0.1)
-     latitude=np.arange(-85.0,-68.9,1./3.)
+     longitude=np.arange(lonmin,lonmax+0.1,0.1)
+     latitude=np.arange(latmin,latmax+1./3.,1./3.)
      depth=np.array([0., 100., 200., 300., 400., 500., 600., 700., 800., 900., 1000., 1500.])
    else:
      sys.exit("~!@#$%^* error : region is not defined, choose either 'Amundsen' or 'Weddell'")

@@ -1,3 +1,5 @@
+# N. Jourdain, IGE-CNRS, MAR-2021
+
 #====================================================================================================
 def add_standard_attributes(ds,miss=9.969209968386869e36):
   """Define standard netcdf attributes for variables already present in the ds xarray dataset.
@@ -242,3 +244,52 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.sftfli.attrs['standard_name'] = 'ice_shelf_fraction'
      ds.sftfli.attrs['cell_method'] = 'area: cell average'
 
+#====================================================================================================
+def rename_dimensions(ds):
+   """ rename dimensions of xarray dataset ds to standard (x,y,z,time) if needed
+
+       usage: 
+              dds = rename_dimensions(dds)
+   """
+
+   if ( "time_counter" in ds.dims ):
+     ds=ds.rename({'time_counter':'time'})
+   if ( "t" in ds.dims ):
+     ds=ds.rename({'t':'time'})
+
+   if ( "depth" in ds.dims ):
+     ds=ds.rename({'depth':'z'})
+   if ( "level" in ds.dims ):
+     ds=ds.rename({'level':'z'})
+   if ( "deptht" in ds.dims ):
+     ds=ds.rename({'deptht':'z'})
+   if ( "depthu" in ds.dims ):
+     ds=ds.rename({'depthu':'z'})
+   if ( "depthv" in ds.dims ):
+     ds=ds.rename({'depthv':'z'})
+   if ( "Z" in ds.dims ):
+     ds=ds.rename({'Z':'z'})
+
+   if ( "x_grid_T" in ds.dims ):
+     ds=ds.rename({'x_grid_T':'x'})
+   if ( "x_grid_U" in ds.dims ):
+     ds=ds.rename({'x_grid_U':'x'})
+   if ( "x_grid_V" in ds.dims ):
+     ds=ds.rename({'x_grid_V':'x'})
+   if ( "XC" in ds.dims ):
+     ds=ds.rename({'XC':'x'})
+   if ( "XG" in ds.dims ):
+     ds=ds.rename({'XG':'x'})
+
+   if ( "y_grid_T" in ds.dims ):
+     ds=ds.rename({'y_grid_T':'y'})
+   if ( "y_grid_U" in ds.dims ):
+     ds=ds.rename({'y_grid_U':'y'})
+   if ( "y_grid_V" in ds.dims ):
+     ds=ds.rename({'y_grid_V':'y'})
+   if ( "YC" in ds.dims ):
+     ds=ds.rename({'YC':'y'}) 
+   if ( "YG" in ds.dims ):
+     ds=ds.rename({'YG':'y'})
+
+   return ds
