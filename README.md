@@ -9,7 +9,7 @@ Nicolas C. Jourdain (IGE, CNRS-UGA, Grenoble, France)
 Contains scripts that facilitate interpolation and formatting to the MISOMIP2 standards.
 
 To use the preprocessing tools, start by specifying:
-```{r, engine='bash', test1}
+```{r, engine='python', test1}
 import misomip2.preproc as misopre
 ```
 
