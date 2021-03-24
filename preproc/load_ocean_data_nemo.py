@@ -290,40 +290,40 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
 
    # sea-ice y-ward velocity [m/s]
    if ( "sivelv" in ncI.data_vars ):
-     SIVX = ncI.sivelv
+     SIVY = ncI.sivelv
    elif ("siv" in ncI.data_vars ):
-     SIVX = ncI.siv
+     SIVY = ncI.siv
    else:
      print('@@@@@ WARNING @@@@@   No data found for SIUY  -->  filled with NaNs')
-     SIUY = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
+     SIVY = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # Total heat flux received by the ocean surface (including ice-shelf/ocean interface) [W m-2] 
    # see Griffies et al. (2016, section K4-K5) NB: here, including correction if any unlike Griffies (to avoid 2 variables)
    if ( "qt_oce" in ncS.data_vars ):
-      HFDS = ncS.qt_oce
+     HFDS = ncS.qt_oce
    elif ( "sohefldo" in ncS.data_vars ):
-      HFDS = ncS.sohefldo
+     HFDS = ncS.sohefldo
    if ( "qisf" in ncS.data_vars ):
-      HFDS = HFDS + ncS.qisf # not included in qt_oce in tested NEMO versions
+     HFDS = HFDS + ncS.qisf # not included in qt_oce in tested NEMO versions
    elif ( "qoceisf_cav" in ncS.data_vars ):
-      HFDS = HFDS + ncS.qoceisf_cav # not included in sohefldo in tested NEMO versions
+     HFDS = HFDS + ncS.qoceisf_cav # not included in sohefldo in tested NEMO versions
 
    # Water flux entering the ocean due to sea-ice (melting-freezing) and surface correction (SSS restoring)
    # (= fsitherm + wfocorr in Griffies 2016 section K2) [kg m-2 s-1]
    if ( "erp" in ncS.data_vars ):
-      ERP = ncS.erp.where( (~np.isnan(ncS.erp.values)), 0.e0 ) # surface correction (SSS restoring)
+     ERP = ncS.erp.where( (~np.isnan(ncS.erp.values)), 0.e0 ) # surface correction (SSS restoring)
    elif ( "sowafld" in ncS.data_vars ):
-      ERP = ncS.sowafld.where( (~np.isnan(ncS.sowafld.values)), 0.e0 ) # surface correction (SSS restoring)
+     ERP = ncS.sowafld.where( (~np.isnan(ncS.sowafld.values)), 0.e0 ) # surface correction (SSS restoring)
    else:
      print('@@@@@ WARNING @@@@@   No data found for ERP  -->  filled with NaNs')
      ERP = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    if ( "saltflx" in ncS.data_vars ): # NB: saltflx unit attribute is wrong in nico's output, it is actually in [1e-3 kg m-2 s-1]
-      WFOSICOR = - ERP - ncS.saltflx / SS.isel(z=0)
-   if ( "sosfldow" in ncS.data_vars ):
-      WFOSICOR = - ncS.sosfldow / SS.isel(z=0) # includes surface correction (ERP) in Pierre's version
+     WFOSICOR = - ERP - ncS.saltflx / SS.isel(z=0)
+   elif ( "sosfldow" in ncS.data_vars ):
+     WFOSICOR = - ncS.sosfldow / SS.isel(z=0) # includes surface correction (ERP) in Pierre's version
    elif ( "sfx" in ncI.data_vars ):
-      WFOSICOR = - ERP - ncI.sfx/86400.0 / SS.isel(z=0)
+     WFOSICOR = - ERP - ncI.sfx/86400.0 / SS.isel(z=0)
    else:
      print('@@@@@ WARNING @@@@@   No data found for WFOSICOR  -->  filled with NaNs')
      WFOSICOR = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
@@ -402,7 +402,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
        "SICONC":    (["time", "sxy"], np.reshape( SICONC.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "SIVOL":     (["time", "sxy"], np.reshape( SIVOL.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "SIUX":      (["time", "sxy"], np.reshape( SIUX.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
-       "SIVY":      (["time", "sxy"], np.reshape( SIVX.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
+       "SIVY":      (["time", "sxy"], np.reshape( SIVY.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "LEVOF":     (["z", "sxy"], np.reshape( LEVOF.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mz,nxy)) ),
        "maskT":     (["z", "sxy"], np.reshape( maskT.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mz,nxy)) ),
        "maskU":     (["z", "sxy"], np.reshape( maskU.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mz,nxy)) ),
