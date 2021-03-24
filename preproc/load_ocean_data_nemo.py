@@ -66,6 +66,14 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
 
    [mz, my, mx] = maskT.shape
 
+   # Domain mask (ones with a halo of nans), used not to interpolate beyond:
+   halonan = np.ones((my,mx))
+   halonan[0,:] = np.nan ; halonan[-1,:] = np.nan
+   halonan[:,0] = np.nan ; halonan[:,-1] = np.nan
+   DOMMSKT = xr.DataArray( halonan, dims=['y', 'x'] )
+   DOMMSKU = xr.DataArray( halonan, dims=['y', 'x'] )
+   DOMMSKV = xr.DataArray( halonan, dims=['y', 'x'] )
+
    # longitude & latitude on U, V, T grids
    lonT = ncM.glamt ; latT = ncM.gphit
    lonU = ncM.glamu ; latU = ncM.gphiu
@@ -410,6 +418,9 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
        "SFTFLI":    (["sxy"], np.reshape( SFTFLI.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, nxy) ),
        "DEPFLI":    (["sxy"], np.reshape( DEPFLI.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, nxy) ),
        "DEPTHO":    (["sxy"], np.reshape( DEPTHO.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, nxy) ),
+       "DOMMSKT":   (["sxy"], np.reshape( DOMMSKT.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, nxy) ),
+       "DOMMSKU":   (["sxy"], np.reshape( DOMMSKU.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, nxy) ),
+       "DOMMSKV":   (["sxy"], np.reshape( DOMMSKV.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, nxy) ),
        "lonT":      (["sxy"], np.reshape( lonT.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, nxy) ),
        "lonU":      (["sxy"], np.reshape( lonU.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, nxy) ),
        "lonV":      (["sxy"], np.reshape( lonV.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, nxy) ),
@@ -424,9 +435,6 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
        "depTUV":    (['z'], depTUV.values)
       },
       coords={
-      #"x": np.arange(SO.shape[3])
-      #"y": np.arange(SO.shape[2])
-      #"z": np.arange(SO.shape[1])
       "time": ncT.time.values
       },
       attrs={
