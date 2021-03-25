@@ -38,6 +38,20 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
 
   ## variables :
 
+  if ( "longitude" in ds.data_vars ):
+    print('define attributes for variable longitude')
+    ds.longitude.attrs['_FillValue'] = miss
+    ds.longitude.attrs['units'] = 'degrees_east'
+    ds.longitude.attrs['long_name'] = 'longitude'
+    ds.longitude.attrs['standard_name'] = 'longitude'
+
+  if ( "latitude" in ds.data_vars ):
+    print('define attributes for variable latitude')
+    ds.latitude.attrs['_FillValue'] = miss
+    ds.latitude.attrs['units'] = 'degrees_north'
+    ds.latitude.attrs['long_name'] = 'latitude'
+    ds.latitude.attrs['standard_name'] = 'latitude'
+
   if ( "so" in ds.data_vars ):
      print('define attributes for variable so')
      ds.so.attrs['_FillValue'] = miss

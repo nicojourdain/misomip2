@@ -23,7 +23,7 @@ To generate the standard MISOMIP2 [lon,lat,depth] grids, use one of these fucnti
 >
 _Exemple_: 
 ```bash 
-[lon,lat,depth]=mp.generate_3d_grid(region='Amundsen')
+[lon,lat,depth]=mp.generate_3d_grid(region='Weddell')
 ```
 
 ### misomip2.preproc.generate\_section\_grid(region='Amundsen'):
@@ -33,7 +33,7 @@ _Exemple_:
 > 
 _Exemple_: 
 ```bash
-[lon,lat,depth]=mp.generate_section_grid(region='Amundsen')
+[lon,lat,depth]=mp.generate_section_grid(region='Weddell')
 ```
 
 ### misomip2.preproc.generate\_mooring\_grid(region='Amundsen'):
@@ -43,7 +43,7 @@ _Exemple_:
 > 
 _Exemple_:
 ```bash
-[lon,lat,depth]=mp.generate_mooring_grid(region='Amundsen')
+[lon,lat,depth]=mp.generate_mooring_grid(region='Weddell')
 ```
 
 To put the MISOMIP2 standard attributes to the xarray dataset that will be saves as netcdf:
@@ -53,6 +53,7 @@ To put the MISOMIP2 standard attributes to the xarray dataset that will be saves
 > (these variables must have the MISOMIP2 standard variable names)
 > 
 >    ds: xarray dataset
+>
 >    miss: missing value (default=9.969209968386869e36)
 >
 _Example_:
@@ -67,7 +68,7 @@ Contains scripts to quickly plot multi-model diagnostics.
 
 To use the analysis tools, start by specifying:
 ```bash
-import misomip2.analysis as misoan
+import misomip2.analysis as ma
 ```
 
 ## Examples

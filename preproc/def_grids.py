@@ -93,6 +93,9 @@ def generate_section_grid(region='Amundsen'):
    else:
      sys.exit("~!@#$%^* error : region is not defined, choose either 'Amundsen' or 'Weddell'")
 
+   if ( np.size(latitude) != np.size(longitude) ):
+     sys.exit("~!@#$%^* error : section must be defined with equal longitude and latitude values")
+
    return [longitude,latitude,depth]
 
 #====================================================================================================

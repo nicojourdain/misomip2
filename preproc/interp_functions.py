@@ -1,5 +1,9 @@
 # N. Jourdain, IGE-CNRS-UGA, MAR-2021
 #============================================================================================
+import numpy as np
+from scipy import interpolate
+
+#============================================================================================
 def vertical_interp(original_depth,interpolated_depth):
    """ Find upper and lower bound indices for simple vertical interpolation
 
