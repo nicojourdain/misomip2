@@ -14,9 +14,9 @@ To use the preprocessing tools, start by specifying:
 import misomip2.preproc as mp
 ```
 
-### Generate the standard MISOMIP2 [lon,lat,depth] grids
+To generate the standard MISOMIP2 [lon,lat,depth] grids, use one of these fucntions:
 
-**misomip2.preproc.generate\_3d\_grid**(region='Amundsen'):
+### misomip2.preproc.generate\_3d\_grid(region='Amundsen'):
 > Generates (longitude, latitude, depth) of the common MISOMIP2 3d grid
 > 
 >    region: 'Amundsen' (default), 'Weddell'
@@ -26,17 +26,17 @@ _Exemple_:
 [lon,lat,depth]=mp.generate_3d_grid(region='Amundsen')
 ```
 
-**misomip2.preproc.generate\_section\_grid**(region='Amundsen'):
+### misomip2.preproc.generate\_section\_grid(region='Amundsen'):
 > Generates (longitude, latitude, depth) of the common MISOMIP2 section
 > 
->     region: 'Amundsen' (default), 'Weddell'
+>    region: 'Amundsen' (default), 'Weddell'
 > 
 _Exemple_: 
 ```bash
 [lon,lat,depth]=mp.generate_section_grid(region='Amundsen')
 ```
 
-**misomip2.preproc.generate\_mooring\_grid**(region='Amundsen'):
+### misomip2.preproc.generate\_mooring\_grid(region='Amundsen'):
 > Generates (longitude, latitude, depth) of the common MISOMIP2 mooring
 >
 >    region: 'Amundsen' (default), 'Weddell'
@@ -46,9 +46,9 @@ _Exemple_:
 [lon,lat,depth]=mp.generate_mooring_grid(region='Amundsen')
 ```
 
-### Put the MISOMIP2 standard attributes to the xarray dataset that will be saves as netcdf
+To put the MISOMIP2 standard attributes to the xarray dataset that will be saves as netcdf:
 
-**add\_standard\_attributes**(ds,miss=9.969209968386869e36):
+### add\_standard\_attributes(ds,miss=9.969209968386869e36):
 > Define standard netcdf attributes for variables that are already present in the ds xarray dataset.
 > (these variables must have the MISOMIP2 standard variable names)
 > 
