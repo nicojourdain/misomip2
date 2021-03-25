@@ -11,7 +11,7 @@ Contains scripts that facilitate interpolation and formatting to the MISOMIP2 st
 
 To use the preprocessing tools, start by specifying:
 ```bash
-import misomip2.preproc
+import misomip2.preproc as mp
 ```
 
 ### Generate the standard MISOMIP2 [lon,lat,depth] grids
@@ -21,21 +21,30 @@ import misomip2.preproc
 > 
 >    region: 'Amundsen' (default), 'Weddell'
 >
->    exemple: ```bash [lon,lat,depth]=generate\_3d\_grid(region='Amundsen') ```
+_Exemple_: 
+```bash 
+[lon,lat,depth]=mp.generate_3d_grid(region='Amundsen')
+```
 
 **misomip2.preproc.generate\_section\_grid**(region='Amundsen'):
 > Generates (longitude, latitude, depth) of the common MISOMIP2 section
 > 
 >     region: 'Amundsen' (default), 'Weddell'
 > 
->     exemple: ```bash [lon,lat,depth]=generate_section_grid(region='Amundsen') ```
+_Exemple_: 
+```bash
+[lon,lat,depth]=mp.generate_section_grid(region='Amundsen')
+```
 
 **misomip2.preproc.generate\_mooring\_grid**(region='Amundsen'):
 > Generates (longitude, latitude, depth) of the common MISOMIP2 mooring
 >
 >    region: 'Amundsen' (default), 'Weddell'
 > 
->    exemple: ```bash [lon,lat,depth]=generate\_mooring\_grid(region='Amundsen') ```
+_Exemple_:
+```bash
+[lon,lat,depth]=mp.generate_mooring_grid(region='Amundsen')
+```
 
 ### Put the MISOMIP2 standard attributes to the xarray dataset that will be saves as netcdf
 
@@ -46,7 +55,10 @@ import misomip2.preproc
 >    ds: xarray dataset
 >    miss: missing value (default=9.969209968386869e36)
 >
->    example: ```bash add_standard_attributes(dsmiso,miss=1.e20) ```
+_Example_:
+```bash
+mp.add_standard_attributes(dsmiso,miss=1.e20)
+```
 
 -----
 
