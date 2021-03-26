@@ -18,6 +18,9 @@ import os
 
 np.seterr(divide='ignore', invalid='ignore') # to avoid warning due to divide by zero
 
+#--------------------------------------------------------------------------
+# 0- General information:
+
 # Original NEMO config & case :
 config='AMUXL025'
 case='GNJ004_BM02'
@@ -388,7 +391,7 @@ DOMMSK_sect = np.squeeze(DOMMSK_sect)
 
 # vertical then horizontal interpolation of constant 3d fields to common grid :
 LEVOF_sect = np.zeros((mdepsect,mlonlatsec)) + missval
-for kk in np.arange(mdep):
+for kk in np.arange(mdepsect):
   if ( kinf[kk] == ksup[kk] ):
     tmpaT = 1.e0
     tmpbT = 0.e0
@@ -469,13 +472,13 @@ mdepmoor = np.size(dep_moor)
 mtime = np.shape(oce.SO)[0]
 
 # mask showing the original domain (nan where interpolation of any of T, U, V grid is nan):
-DOMMSK_moor =               mp.horizontal_interp( lonT, latT, 1, 1, lon_moor0d, lat_moor0d, oce.DOMMSKT )
-DOMMSK_moor = DOMMSK_moor + mp.horizontal_interp( lonU, latU, 1, 1, lon_moor0d, lat_moor0d, oce.DOMMSKU )
-DOMMSK_moor = DOMMSK_moor + mp.horizontal_interp( lonV, latV, 1, 1, lon_moor0d, lat_moor0d, oce.DOMMSKV )
+DOMMSK_moor =               np.squeeze(mp.horizontal_interp( lonT, latT, 1, 1, lon_moor0d, lat_moor0d, oce.DOMMSKT ))
+DOMMSK_moor = DOMMSK_moor + np.squeeze(mp.horizontal_interp( lonU, latU, 1, 1, lon_moor0d, lat_moor0d, oce.DOMMSKU ))
+DOMMSK_moor = DOMMSK_moor + np.squeeze(mp.horizontal_interp( lonV, latV, 1, 1, lon_moor0d, lat_moor0d, oce.DOMMSKV ))
 
 # vertical then horizontal interpolation of constant 3d fields to common grid :
-LEVOF_moor = np.zeros((mdep)) + missval
-for kk in np.arange(mdep):
+LEVOF_moor = np.zeros((mdepmoor)) + missval
+for kk in np.arange(mdepmoor):
   if ( kinf[kk] == ksup[kk] ):
     tmpaT = 1.e0
     tmpbT = 0.e0
@@ -484,9 +487,10 @@ for kk in np.arange(mdep):
     tmpbT = dep_moor[kk] - oce.depTUV.isel(z=kinf[kk])
   tmpxT = tmpaT + tmpbT
   tmp_OC = ( oce.LEVOF.isel(z=kinf[kk]) * tmpaT + oce.LEVOF.isel(z=ksup[kk]) * tmpbT ) / tmpxT
-  tzz = mp.horizontal_interp( lonT, latT, 1, 1, lon_moor0d, lat_moor0d, tmp_OC )
-  tzz[ np.isnan(DOMMSK_moor) ] = missval
-  LEVOF_moor[kk] = np.squeeze(tzz)
+  tzz = np.squeeze(mp.horizontal_interp( lonT, latT, 1, 1, lon_moor0d, lat_moor0d, tmp_OC ))
+  if ( np.isnan(DOMMSK_moor) ):
+     tzz = missval
+  LEVOF_moor[kk] = tzz
 
 SO_moor     = np.zeros((mtime,mdepmoor)) + missval
 THETAO_moor = np.zeros((mtime,mdepmoor)) + missval
@@ -505,11 +509,13 @@ for ll in np.arange(mtime):
     tmp_TT = ( oce.THETAO.isel(time=ll,z=kinf[kk]) * tmpaT + oce.THETAO.isel(time=ll,z=ksup[kk]) * tmpbT ) / tmpxT
 
     tzz = np.squeeze(mp.horizontal_interp_nonan( lonT, latT, 1, 1, lon_moor0d, lat_moor0d, tmp_SS ))
-    tzz[ (LEVOF_moor[kk] < 1.) | (np.isnan(DOMMSK_moor)) ] = missval
+    if ( (LEVOF_moor[kk] < 1.) | (np.isnan(DOMMSK_moor)) ):
+      tzz = missval
     SO_moor[ll,kk] = tzz
 
     tzz = np.squeeze(mp.horizontal_interp_nonan( lonT, latT, 1, 1, lon_moor0d, lat_moor0d, tmp_TT ))
-    tzz[ (LEVOF_moor[kk] < 1.) | (np.isnan(DOMMSK_moor)) ] = missval
+    if ( (LEVOF_moor[kk] < 1.) | (np.isnan(DOMMSK_moor)) ):
+      tzz = missval
     THETAO_moor[ll,kk] = tzz
 
 #--------------------------------------------------------------------------
