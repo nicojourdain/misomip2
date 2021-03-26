@@ -1,4 +1,4 @@
-# N. Jourdain, IGE-CNRS-UGA, MAR-2021
+# 2021-03 : Initial code [N. Jourdain, IGE-CNRS]
 #============================================================================================
 import numpy as np
 from scipy import interpolate
@@ -29,7 +29,6 @@ def vertical_interp(original_depth,interpolated_depth):
           ksup[k] = np.max([ 0, knear-1 ])
         else:
           ksup[k] = np.min([ np.size(original_depth)-1, knear+1 ])
-      print([k, interpolated_depth[k], kinf[k], original_depth[kinf[k]], ksup[k], original_depth[ksup[k]]]) 
    return (kinf,ksup)
 
 #============================================================================================

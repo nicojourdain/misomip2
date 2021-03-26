@@ -1,4 +1,5 @@
-# N. Jourdain, IGE-CNRS, MAR-2021
+# 2021-03 : Initial code [N. Jourdain, IGE-CNRS]
+#====================================================================================
 
 import numpy as np
 import xarray as xr
@@ -182,10 +183,10 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
 
    # ocean potential temperature and practical salinity :
    if (teos10):
-     TOB = xr.apply_ufunc(gsw.pt_from_CT, SSB, TTB)
-     SOB = xr.apply_ufunc(gsw.SP_from_SA, SSB, DEPTHO, lonT, latT)
-     THETAO = xr.apply_ufunc(gsw.pt_from_CT, SS, TT)
-     SO = xr.apply_ufunc(gsw.SP_from_SA, SS, DEPTHO, lonT, latT)
+     TOB = xr.apply_ufunc(gsw.pt_from_CT, SSB, TTB, dask = 'allowed')
+     SOB = xr.apply_ufunc(gsw.SP_from_SA, SSB, DEPTHO, lonT, latT, dask = 'allowed')
+     THETAO = xr.apply_ufunc(gsw.pt_from_CT, SS, TT, dask = 'allowed')
+     SO = xr.apply_ufunc(gsw.SP_from_SA, SS, DEPTHO, lonT, latT, dask = 'allowed')
    else: 
      TOB = TTB
      SOB = SSB

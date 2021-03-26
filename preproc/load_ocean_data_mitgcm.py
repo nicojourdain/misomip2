@@ -1,4 +1,5 @@
-# N. Jourdain, IGE-CNRS, MAR-2021
+# 2021-03 : Initial code [N. Jourdain, IGE-CNRS]
+#====================================================================================
 
 import numpy as np
 import xarray as xr
@@ -9,12 +10,25 @@ from .def_grids import grid_bounds
 #====================================================================================
 def load_oce_mod_mitgcm(files_in='MITgcm_output.nc',\
                         rho0=1026.0, teos10=False, region='Amundsen' ):
-   """ Read MITgcm outputs on stereographic grid and define an xarray 
-       dataset containing all variables required in MISOMIP2
+   """ Read MITgcm outputs and define an xarray dataset containing 
+       all variables required in MISOMIP2. It automatically detects
+       whether coordinates are stereographic or lon-lat.
 
-       (XC,YC) -> gridT
-       (XG,YC) -> gridU
-       (XC,YG) -> gridV     
+       files_in: file or list of files containing all the variables
+
+       rho0: volumic mass of seawater used in ocean model
+
+       teos10=False -> assumes the nemo outputs are in potential temperature & practical salinity (EOS80)
+
+             =True  -> assumes the nemo outputs are in CT and AS and convert to PT and PS
+        
+       Example1:
+          ds = load_oce_mod_mitgcm()
+
+       Example2:
+          dir= 'datadir/model/'
+          ff = [ dir+'MITgcm_y2009.nc', dir+'MITgcm_y2010.nc', dir+'MITgcm_y2011.nc' ]
+          ds = load_oce_mod_mitgcm(files_in=ff, rho0=1028.0, region='Weddell')
 
    """
 
@@ -127,6 +141,8 @@ def load_oce_mod_mitgcm(files_in='MITgcm_output.nc',\
      TT = ncTUV.thetao
    elif ( "THETA" in ncTUV.data_vars ):
      TT = ncTUV.THETA
+   elif ( "T" in ncTUV.data_vars ):
+     TT = ncTUV.T
    else:
      print('@@@@@ WARNING @@@@@   No data found for TT  -->  filled with NaNs')
      TT = xr.DataArray( np.zeros((mtime,mz,my,mx))*np.nan, dims=['time', 'Z', 'YC', 'XC'] )
@@ -138,6 +154,8 @@ def load_oce_mod_mitgcm(files_in='MITgcm_output.nc',\
      SS = ncTUV.so
    elif ( "SALT" in ncTUV.data_vars ):
      SS = ncTUV.SALT
+   elif ( "S" in ncTUV.data_vars ):
+     SS = ncTUV.S
    else:
      print('@@@@@ WARNING @@@@@   No data found for SS  -->  filled with NaNs')
      SS = xr.DataArray( np.zeros((mtime,mz,my,mx))*np.nan, dims=['time', 'Z', 'YC', 'XC'] )
@@ -183,6 +201,8 @@ def load_oce_mod_mitgcm(files_in='MITgcm_output.nc',\
      UX = ncTUV.UVEL
    elif ( "uo" in ncTUV.data_vars ):
      UX = ncTUV.uo
+   elif ( "U" in ncTUV.data_vars ):
+     UX = ncTUV.U
    else:
      print('@@@@@ WARNING @@@@@   No data found for UX  -->  filled with NaNs')
      UX = xr.DataArray( np.zeros((mtime,mz,my,mx))*np.nan, dims=['time', 'Z', 'YC', 'XG'] )
@@ -194,6 +214,8 @@ def load_oce_mod_mitgcm(files_in='MITgcm_output.nc',\
      VY = ncTUV.VVEL
    elif ( "vo" in ncTUV.data_vars ):
      VY = ncTUV.vo
+   elif ( "V" in ncTUV.data_vars ):
+     VY = ncTUV.V
    else:
      print('@@@@@ WARNING @@@@@   No data found for VY  -->  filled with NaNs')
      VY = xr.DataArray( np.zeros((mtime,mz,my,mx))*np.nan, dims=['time', 'Z', 'YG', 'XC'] )

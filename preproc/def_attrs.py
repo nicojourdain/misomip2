@@ -1,4 +1,4 @@
-# N. Jourdain, IGE-CNRS, MAR-2021
+# 2021-03 : Initial code [N. Jourdain, IGE-CNRS]
 
 #====================================================================================================
 def add_standard_attributes(ds,miss=9.969209968386869e36):
