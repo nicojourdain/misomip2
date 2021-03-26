@@ -86,10 +86,9 @@ To load model outputs, either use an existing function or create a similar one i
 >
 >    files\_in: file or list of files containing all the variables
 >
->    rho0: volumic mass of seawater used in ocean model
+>    rho0: reference volumic mass of seawater used in ocean model [kg m-3]
 >
->    teos10=False -> assumes the nemo outputs are in potential temperature & practical salinity (EOS80)
->
+>    teos10=False -> assumes the nemo outputs are in potential temperature & practical salinity (EOS80)<br/>
 >          =True  -> assumes the nemo outputs are in CT and AS and convert to PT and PS
 >
 _Example_:
@@ -107,8 +106,7 @@ ds = load_oce_mod_mitgcm(files_in=ff, rho0=1028.0, region='Weddell')
 >
 >    rho0 corresponds to rau0 value in NEMO's eosbn2.F90 i.e. reference volumic mass [kg m-3]
 >
->    teos10=False -> assumes the nemo outputs are in potential temperature & practical salinity (EOS80)
->
+>    teos10=False -> assumes the nemo outputs are in potential temperature & practical salinity (EOS80)<br/>
 >          =True  -> assumes the nemo outputs are in CT and AS and convert to PT and PS
 >
 >    region = 'Amundsen' (default) or 'Weddell'

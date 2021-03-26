@@ -1,23 +1,22 @@
 ###################################################################################
-# Script to interpolate native ocean model outputs to the standard MISOMIP2 grid.
+# Script to interpolate native ocean model outputs to the standard MISOMIP2 grids.
 #
-# Works for :
-#          * A,B or C-grid (only tested with C-grid).
-#          * non-regular grid such as NEMO's eORCA.
-#
-# Does not work for :
-#          * unstructured grids (needs some modifications but most of it should work)
-#
+# Notes:
+#     * interpolations are done on 1-dimensional vectors, so the script should be
+#       easily adaptable to non-structured grids.
+#     * needs some modificationds to work with sigma or HAL coordinates.
+#     
 # History: 
-#          * initial version and tests for NEMO outputs [N. Jourdain, March 2021]
+#     * 2021-03: initial code + tests for NEMO & MITgcm outputs [N. Jourdain, IGE-CNRS]
 #
 ###################################################################################
 import numpy as np
 import xarray as xr
 import sys
-import misomip2.preproc as misopre
-from scipy import interpolate
+import misomip2.preproc as mp
 import os
+
+np.seterr(divide='ignore', invalid='ignore') # to avoid warning due to divide by zero
 
 # Original NEMO config & case :
 config='AMUXL025'
@@ -47,11 +46,8 @@ missval=9.969209968386869e36
 
 if ( model[0:4] == 'NEMO' ):
 
-   # Original grid coordinates and mask (mesh_mask) :
-   f_mesh=data_dir+'/mesh_mask_AMUXL025_BedMachineAntarctica-2019-05-24.nc'
-   # Bathymetry :
-   f_bathy=data_dir+'/bathy_meter_AMUXL025_BedMachineAntarctica-2019-05-24.nc'
-   # NEMO outputs :
+   f_mesh   = data_dir+'/mesh_mask_AMUXL025_BedMachineAntarctica-2019-05-24.nc'
+   f_bathy  = data_dir+'/bathy_meter_AMUXL025_BedMachineAntarctica-2019-05-24.nc'
    fs_gridT = [data_dir+'/'+config+'-'+case+'_1m_'+year.astype('str')+'0101_'+year.astype('str')+'1231_grid_T.nc' for year in np.arange(yeari,yearf+1)]
    fs_gridU = [data_dir+'/'+config+'-'+case+'_1m_'+year.astype('str')+'0101_'+year.astype('str')+'1231_grid_U.nc' for year in np.arange(yeari,yearf+1)]
    fs_gridV = [data_dir+'/'+config+'-'+case+'_1m_'+year.astype('str')+'0101_'+year.astype('str')+'1231_grid_V.nc' for year in np.arange(yeari,yearf+1)]
@@ -61,15 +57,15 @@ if ( model[0:4] == 'NEMO' ):
    fs_BSF   = [data_dir+'/'+config+'-'+case+'_1m_'+year.astype('str')+'0101_'+year.astype('str')+'1231_psi.nc' for year in np.arange(yeari,yearf+1)]
 
    print('LOADING NEMO...')
-   oce = misopre.load_oce_mod_nemo( file_mesh_mask=f_mesh, file_bathy=f_bathy, files_gridT=fs_gridT,\
+   oce = mp.load_oce_mod_nemo( file_mesh_mask=f_mesh, file_bathy=f_bathy, files_gridT=fs_gridT,\
                   files_gridU=fs_gridU, files_gridV=fs_gridV, files_SBC=fs_SBC, files_ice=fs_ice,\
-                  files_BSF=fs_BSF, rho0=1026.0, teos10=False )
+                  files_BSF=fs_BSF, rho0=1026.0, teos10=True )
 
 elif ( model[0:10] == 'MITGCM_UNN' ):
 
    print('LOADING MITGCM...')
    fs = data_dir+'MITgcm_output_example.nc'
-   oce = misopre.load_oce_mod_mitgcm( files_in=fs,\
+   oce = mp.load_oce_mod_mitgcm( files_in=fs,\
                                       rho0=1026.0, teos10=False )
 
 else:
@@ -118,6 +114,28 @@ def put_global_attrs(ds,experiment='TBD',avg_hor_res_73S=0.0,original_sim_name='
 #--------------------------------------------------------------------------
 # 3a- Interpolate to common 3d grid :
 
+
+# Characteristics of MISOMIP 3d grid:
+[lon_miso,lat_miso,dep_miso] = mp.generate_3d_grid(region=reg)
+mlon = np.size(lon_miso)
+mlat = np.size(lat_miso)
+mdep = np.size(dep_miso)
+lon2d_miso, lat2d_miso = np.meshgrid( lon_miso, lat_miso )
+lon_miso1d = np.reshape( lon2d_miso, mlon*mlat )
+lat_miso1d = np.reshape( lat2d_miso, mlon*mlat )
+
+# model coordinates:
+lonT=oce.lonT ; lonU=oce.lonU ; lonV=oce.lonV
+latT=oce.latT ; latU=oce.latU ; latV=oce.latV
+
+# Some quantities needed to define the global attributes:
+res_73S = 0.5 * (  oce.dxT.where(  (latT < -72.5) & (latT >= -73.5) & (lonT >= lon_miso.min()) & (lonT <= lon_miso.max()) \
+                                 & (oce.maskT.isel(z=0)==1)   ).mean().values \
+                 + oce.dyT.where(  (latT < -72.5) & (latT >= -73.5) & (lonT >= lon_miso.min()) & (lonT <= lon_miso.max()) \
+                                 & (oce.maskT.isel(z=0)==1) ).mean().values )
+print('Average horizontal resolution at 73S :',res_73S)
+
+# Useful masks with nans
 maskTnan = oce.maskT.where( (oce.maskT==1) ) # 3d mask (=1 if ocean, =nan elsewhere)
 maskUnan = oce.maskU.where( (oce.maskU==1) )
 maskVnan = oce.maskV.where( (oce.maskV==1) )
@@ -125,32 +143,15 @@ maskTnan2d = oce.maskT.max(dim='z').where( oce.maskT.max(dim='z')==1 ) # 2d mask
 maskUnan2d = oce.maskU.max(dim='z').where( oce.maskU.max(dim='z')==1 )
 maskVnan2d = oce.maskV.max(dim='z').where( oce.maskU.max(dim='z')==1 )
 
-[lon_miso,lat_miso,dep_miso] = misopre.generate_3d_grid(region=reg)
-
-mlon = np.size(lon_miso)
-mlat = np.size(lat_miso)
-mdep = np.size(dep_miso)
-
-lon2d_miso, lat2d_miso = np.meshgrid( lon_miso, lat_miso )
-
-[kinf,ksup] = misopre.vertical_interp(oce.depTUV.values,dep_miso)
+# Lower and upper indices for vertical interpolation:
+[kinf,ksup] = mp.vertical_interp(oce.depTUV.values,dep_miso)
 
 mtime = np.shape(oce.SO)[0]
 
-# useful quantities for interpolation and rotation of velocity vectors:
-lonT1d = np.reshape( oce.lonT.values, np.size(oce.lonT) )
-latT1d = np.reshape( oce.latT.values, np.size(oce.latT) )    
-lonU1d = np.reshape( oce.lonU.values, np.size(oce.lonU) )
-latU1d = np.reshape( oce.latU.values, np.size(oce.latU) )
-lonV1d = np.reshape( oce.lonV.values, np.size(oce.lonV) )
-latV1d = np.reshape( oce.latV.values, np.size(oce.latV) )
-lon_miso1d = np.reshape( lon2d_miso, mlon*mlat )
-lat_miso1d = np.reshape( lat2d_miso, mlon*mlat )
-
-# mask of original domain (nan where interpolation of any of T, U, V grid is nan):
-DOMMSK_miso =               misopre.horizontal_interp( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.DOMMSKT )
-DOMMSK_miso = DOMMSK_miso + misopre.horizontal_interp( lonU1d, latU1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.DOMMSKU )
-DOMMSK_miso = DOMMSK_miso + misopre.horizontal_interp( lonV1d, latV1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.DOMMSKV )
+# mask showing the original domain (nan where interpolation of any of T, U, V grid is nan):
+DOMMSK_miso =               mp.horizontal_interp( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.DOMMSKT )
+DOMMSK_miso = DOMMSK_miso + mp.horizontal_interp( lonU, latU, mlat, mlon, lon_miso1d, lat_miso1d, oce.DOMMSKU )
+DOMMSK_miso = DOMMSK_miso + mp.horizontal_interp( lonV, latV, mlat, mlon, lon_miso1d, lat_miso1d, oce.DOMMSKV )
 
 # vertical then horizontal interpolation of constant 3d fields to common grid :
 LEVOF_miso = np.zeros((mdep,mlat,mlon)) + missval
@@ -163,29 +164,32 @@ for kk in np.arange(mdep):
     tmpbT = dep_miso[kk] - oce.depTUV.isel(z=kinf[kk])
   tmpxT = tmpaT + tmpbT
   tmp_OC = ( oce.LEVOF.isel(z=kinf[kk]) * tmpaT + oce.LEVOF.isel(z=ksup[kk]) * tmpbT ) / tmpxT
-  tzz = misopre.horizontal_interp( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, tmp_OC )
+  tzz = mp.horizontal_interp( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, tmp_OC )
   tzz[ np.isnan(DOMMSK_miso) ] = missval
   LEVOF_miso[kk,:,:] = tzz
 
 # horizontal interpolation of constant 2d fields to common horizontal grid :
-theT = misopre.horizontal_interp( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.thetaT )
-theU = misopre.horizontal_interp( lonU1d, latU1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.thetaU )
-theV = misopre.horizontal_interp( lonV1d, latV1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.thetaV )
+theT = mp.horizontal_interp( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.thetaT )
+theU = mp.horizontal_interp( lonU, latU, mlat, mlon, lon_miso1d, lat_miso1d, oce.thetaU )
+theV = mp.horizontal_interp( lonV, latV, mlat, mlon, lon_miso1d, lat_miso1d, oce.thetaV )
 
-SFTFLI_miso = misopre.horizontal_interp( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.SFTFLI )
+# Ice shelf fraction
+SFTFLI_miso = mp.horizontal_interp( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.SFTFLI )
 SFTFLI_miso[ np.isnan(DOMMSK_miso) ] = missval
 
+# Depth of floating ice (ice-shelf draft)
 DEPFLI = oce.DEPFLI.where( (oce.SFTFLI.values > 1.), np.nan ) # to avoid interpolation with 0 depth beyond the grounding line
-DEPFLI_miso = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, DEPFLI )
+DEPFLI_miso = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, DEPFLI )
 DEPFLI_miso[ (SFTFLI_miso < 1.) | np.isnan(DEPFLI_miso) ] = 0.e0
 DEPFLI_miso[ np.isnan(DOMMSK_miso) ] = missval
 
+# Ocean depth
 DEPTHO = oce.DEPTHO.where( (oce.SFTFLI.values > 1.) | (oce.LEVOF[0,:].values > 1.), np.nan )
-DEPTHO_miso = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, DEPTHO )
+DEPTHO_miso = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, DEPTHO )
 DEPTHO_miso[ ((SFTFLI_miso < 1.) & (LEVOF_miso[0,:,:] < 1.)) | np.isnan(DEPTHO_miso) ] = 0.e0
 DEPTHO_miso[ np.isnan(DOMMSK_miso) ] = missval
 
-# interpolation of time-varying fields:
+#----- interpolation of time-varying fields:
 
 SO_miso     = np.zeros((mtime,mdep,mlat,mlon)) + missval
 THETAO_miso = np.zeros((mtime,mdep,mlat,mlon)) + missval
@@ -213,43 +217,42 @@ LEVOF_maxdep = np.amax(LEVOF_miso,axis=0)
 TOB=oce.TOB.where( (np.abs(oce.SOB.values) > 1.e-3) )
 SOB=oce.SOB.where( (~np.isnan(TOB.values)) )
 
-for ll in np.arange(2):
-#for ll in np.arange(mtime):
+for ll in np.arange(mtime):
 
-  tzz = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.ZOS.isel(time=ll)*maskTnan.isel(z=0) )
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.ZOS.isel(time=ll)*maskTnan.isel(z=0) )
   tzz[ (LEVOF_maxdep < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; ZOS_miso[ll,:,:] = tzz
 
-  tzz = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, TOB.isel(time=ll) )
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, TOB.isel(time=ll) )
   tzz[ (LEVOF_maxdep < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; TOB_miso[ll,:,:] = tzz
 
-  tzz = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, SOB.isel(time=ll) )
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, SOB.isel(time=ll) )
   tzz[ (LEVOF_maxdep < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; SOB_miso[ll,:,:] = tzz
 
-  tzz = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.FICESHELF.isel(time=ll)*maskTnan.max('z',skipna=True) )
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.FICESHELF.isel(time=ll)*maskTnan.max('z',skipna=True) )
   tzz[ (SFTFLI_miso < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; FICESHELF_miso[ll,:,:] = tzz
 
-  tzz = misopre.horizontal_interp_nonan( lonU1d, latU1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.MSFTBAROT.isel(time=ll)*maskUnan.isel(z=0) )
+  tzz = mp.horizontal_interp_nonan( lonU, latU, mlat, mlon, lon_miso1d, lat_miso1d, oce.MSFTBAROT.isel(time=ll)*maskUnan.isel(z=0) )
   tzz[ (LEVOF_maxdep < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; MSFTBAROT_miso[ll,:,:] = tzz
 
-  tzz = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.HFDS.isel(time=ll)*maskTnan.isel(z=0) )
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.HFDS.isel(time=ll)*maskTnan.isel(z=0) )
   tzz[ (LEVOF_maxdep < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; HFDS_miso[ll,:,:] = tzz
 
-  tzz = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.WFOATRLI.isel(time=ll)*maskTnan.isel(z=0) )
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.WFOATRLI.isel(time=ll)*maskTnan.isel(z=0) )
   tzz[ (LEVOF_maxdep < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; WFOATRLI_miso[ll,:,:] = tzz
 
-  tzz = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.WFOSICOR.isel(time=ll)*maskTnan.isel(z=0) )
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.WFOSICOR.isel(time=ll)*maskTnan.isel(z=0) )
   tzz[ (LEVOF_miso[0,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; WFOSICOR_miso[ll,:,:] = tzz
 
-  tzz = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.SICONC.isel(time=ll)*maskTnan.isel(z=0) )
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.SICONC.isel(time=ll)*maskTnan.isel(z=0) )
   tzz[ (LEVOF_miso[0,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; SICONC_miso[ll,:,:] = tzz
 
-  tzz = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.SIVOL.isel(time=ll)*maskTnan.isel(z=0) )
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.SIVOL.isel(time=ll)*maskTnan.isel(z=0) )
   tzz[ (LEVOF_miso[0,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; SIVOL_miso[ll,:,:] = tzz
 
   # sea-ice velocities: rotation and interpolation weighted by sea-ice concentration
-  SIUX_notrot = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.SIUX.isel(time=ll)*oce.SICONC.isel(time=ll) )
+  SIUX_notrot = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.SIUX.isel(time=ll)*oce.SICONC.isel(time=ll) )
   SIUX_notrot[ (LEVOF_miso[0,:,:] < 1.) ] = np.nan
-  SIVY_notrot = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.SIVY.isel(time=ll)*oce.SICONC.isel(time=ll) )
+  SIVY_notrot = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.SIVY.isel(time=ll)*oce.SICONC.isel(time=ll) )
   SIVY_notrot[ (LEVOF_miso[0,:,:] < 1.) ] = np.nan
   SIU_miso[ll,:,:] = ( SIUX_notrot * np.cos(theT) + SIVY_notrot * np.sin(theT) ) / SICONC_miso[ll,:,:] # rotated to zonal
   SIV_miso[ll,:,:] = ( SIVY_notrot * np.cos(theT) - SIUX_notrot * np.sin(theT) ) / SICONC_miso[ll,:,:] # rotated to meridional
@@ -257,9 +260,9 @@ for ll in np.arange(2):
   SIV_miso[ ( np.isnan(SIV_miso) ) | ( np.isinf(SIV_miso) ) | (SICONC_miso[ll,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
 
   # wind stress: rotation and interpolation
-  TAUX_notrot = misopre.horizontal_interp_nonan( lonU1d, latU1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.TAUX.isel(time=ll)*maskUnan2d )
+  TAUX_notrot = mp.horizontal_interp_nonan( lonU, latU, mlat, mlon, lon_miso1d, lat_miso1d, oce.TAUX.isel(time=ll)*maskUnan2d )
   TAUX_notrot[ (LEVOF_miso[0,:,:] < 1.) & (SFTFLI_miso < 1.) ] = np.nan
-  TAUY_notrot = misopre.horizontal_interp_nonan( lonV1d, latV1d, mlat, mlon, lon_miso1d, lat_miso1d, oce.TAUY.isel(time=ll)*maskVnan2d )
+  TAUY_notrot = mp.horizontal_interp_nonan( lonV, latV, mlat, mlon, lon_miso1d, lat_miso1d, oce.TAUY.isel(time=ll)*maskVnan2d )
   TAUY_notrot[ (LEVOF_miso[0,:,:] < 1.) & (SFTFLI_miso < 1.) ] = np.nan
   TAUUO_miso[ll,:,:] = TAUX_notrot * np.cos(theU) + TAUY_notrot * np.sin(theV) # rotated to zonal
   TAUVO_miso[ll,:,:] = TAUY_notrot * np.cos(theV) - TAUX_notrot * np.sin(theU) # rotated to meridional
@@ -298,14 +301,16 @@ for ll in np.arange(2):
     tmp_VY = ( oce.VY.isel(time=ll,z=kinf[kk]) * tmpaV + oce.VY.isel(time=ll,z=ksup[kk]) * tmpbV ) / tmpxV # Inf if no interpolable value
 
     # horizontal interpolations of time-varying 3d fields to common horizontal grid : 
-    tzz = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, tmp_SS )
-    tzz[ (LEVOF_miso[kk,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; SO_miso[ll,kk,:,:] = tzz
+    tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, tmp_SS )
+    tzz[ (LEVOF_miso[kk,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+    SO_miso[ll,kk,:,:] = tzz
 
-    tzz = misopre.horizontal_interp_nonan( lonT1d, latT1d, mlat, mlon, lon_miso1d, lat_miso1d, tmp_TT )
-    tzz[ (LEVOF_miso[kk,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; THETAO_miso[ll,kk,:,:] = tzz
+    tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, tmp_TT )
+    tzz[ (LEVOF_miso[kk,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+    THETAO_miso[ll,kk,:,:] = tzz
 
-    UX_notrot = misopre.horizontal_interp_nonan( lonU1d, latU1d, mlat, mlon, lon_miso1d, lat_miso1d, tmp_UX )
-    VY_notrot = misopre.horizontal_interp_nonan( lonV1d, latV1d, mlat, mlon, lon_miso1d, lat_miso1d, tmp_VY )
+    UX_notrot = mp.horizontal_interp_nonan( lonU, latU, mlat, mlon, lon_miso1d, lat_miso1d, tmp_UX )
+    VY_notrot = mp.horizontal_interp_nonan( lonV, latV, mlat, mlon, lon_miso1d, lat_miso1d, tmp_VY )
     tzz = UX_notrot * np.cos(theU) + VY_notrot * np.sin(theV) # rotated to zonal
     tzz[ (LEVOF_miso[kk,:,:] < 1.) | (np.isnan(tzz)) | (np.isnan(DOMMSK_miso)) ] = missval
     UO_miso[ll,kk,:,:] = tzz
@@ -313,18 +318,11 @@ for ll in np.arange(2):
     tzz[ (LEVOF_miso[kk,:,:] < 1.) | (np.isnan(tzz)) | (np.isnan(DOMMSK_miso)) ] = missval
     VO_miso[ll,kk,:,:] = tzz
  
-# Some quantities needed to define the global attributes:
-res_73S = 0.5 * (  oce.dxT.where(  (oce.latT < -72.5) & (oce.latT >= -73.5) & (oce.lonT >= lon_miso.min()) & (oce.lonT <= lon_miso.max()) \
-                                 & (oce.maskT.isel(z=0)==1)   ).mean().values \
-                 + oce.dyT.where(  (oce.latT < -72.5) & (oce.latT >= -73.5) & (oce.lonT >= lon_miso.min()) & (oce.lonT <= lon_miso.max()) \
-                                 & (oce.maskT.isel(z=0)==1) ).mean().values )
-print('Average horizontal resolution at 73S :',res_73S)
-
 
 #--------------------------------------------------------------------------
 # 3b- Create new xarray dataset and save to netcdf
 
-dsmiso = xr.Dataset(
+dsmiso3d = xr.Dataset(
     {
     "so":        (["time", "depth", "latitude", "longitude"], np.float32(SO_miso)),
     "thetao":    (["time", "depth", "latitude", "longitude"], np.float32(THETAO_miso)),
@@ -357,10 +355,185 @@ dsmiso = xr.Dataset(
     },
 )
 
-misopre.add_standard_attributes(dsmiso,miss=missval)
-put_global_attrs(dsmiso,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='nemo_'+config+'_'+case,\
+mp.add_standard_attributes(dsmiso3d,miss=missval)
+put_global_attrs(dsmiso3d,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='nemo_'+config+'_'+case,\
                  original_min_lat=oce.attrs.get('original_minlat'),original_max_lat=oce.attrs.get('original_maxlat'),\
                  original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
-print(dsmiso)
-dsmiso.to_netcdf('test.nc',unlimited_dims="time")
+print(dsmiso3d)
 
+file_miso3d = 'Oce3d_'+model+'_'+exp+'_'+np.int32(yeari).astype('str')+'01_'+np.int32(yearf).astype('str')+'12.nc'
+
+dsmiso3d.to_netcdf(file_miso3d,unlimited_dims="time")
+
+del dsmiso3d
+del SO_miso, THETAO_miso, UO_miso, VO_miso
+
+#--------------------------------------------------------------------------
+# 4a- Interpolate to common section :
+
+# Characteristics of MISOMIP section grid:
+[lon_sect1d,lat_sect1d,dep_sect] = mp.generate_section_grid(region=reg)
+mlonlatsec = np.size(lon_sect1d)
+mdepsect = np.size(dep_sect)
+
+# Lower and upper indices for vertical interpolation:
+[kinf,ksup] = mp.vertical_interp(oce.depTUV.values,dep_sect)
+
+# mask showing the original domain (nan where interpolation of any of T, U, V grid is nan):
+DOMMSK_sect =               mp.horizontal_interp( lonT, latT, mlonlatsec, 1, lon_sect1d, lat_sect1d, oce.DOMMSKT )
+DOMMSK_sect = DOMMSK_sect + mp.horizontal_interp( lonU, latU, mlonlatsec, 1, lon_sect1d, lat_sect1d, oce.DOMMSKU )
+DOMMSK_sect = DOMMSK_sect + mp.horizontal_interp( lonV, latV, mlonlatsec, 1, lon_sect1d, lat_sect1d, oce.DOMMSKV )
+DOMMSK_sect = np.squeeze(DOMMSK_sect)
+
+# vertical then horizontal interpolation of constant 3d fields to common grid :
+LEVOF_sect = np.zeros((mdepsect,mlonlatsec)) + missval
+for kk in np.arange(mdep):
+  if ( kinf[kk] == ksup[kk] ):
+    tmpaT = 1.e0
+    tmpbT = 0.e0
+  else:
+    tmpaT = oce.depTUV.isel(z=ksup[kk]) - dep_sect[kk]
+    tmpbT = dep_sect[kk] - oce.depTUV.isel(z=kinf[kk])
+  tmpxT = tmpaT + tmpbT
+  tmp_OC = ( oce.LEVOF.isel(z=kinf[kk]) * tmpaT + oce.LEVOF.isel(z=ksup[kk]) * tmpbT ) / tmpxT
+  tzz = np.squeeze(mp.horizontal_interp( lonT, latT, mlonlatsec, 1, lon_sect1d, lat_sect1d, tmp_OC ))
+  tzz[ np.isnan(DOMMSK_sect) ] = missval
+  LEVOF_sect[kk,:] = tzz
+
+SO_sect     = np.zeros((mtime,mdepsect,mlonlatsec)) + missval
+THETAO_sect = np.zeros((mtime,mdepsect,mlonlatsec)) + missval
+
+for ll in np.arange(mtime):
+  for kk in np.arange(mdepsect):
+
+    if ( kinf[kk] == ksup[kk] ):
+      tmpaT = oce.maskT.isel(z=kinf[kk])
+      tmpbT = tmpaT*0
+    else:
+      tmpaT = oce.maskT.isel(z=kinf[kk]) * (oce.depTUV.isel(z=ksup[kk])-dep_sect[kk])
+      tmpbT = oce.maskT.isel(z=ksup[kk]) * (dep_sect[kk]-oce.depTUV.isel(z=kinf[kk]))
+    tmpxT = tmpaT + tmpbT
+    tmp_SS = ( oce.SO.isel(time=ll,z=kinf[kk]) * tmpaT + oce.SO.isel(time=ll,z=ksup[kk]) * tmpbT ) / tmpxT # Inf if no interpolable value
+    tmp_TT = ( oce.THETAO.isel(time=ll,z=kinf[kk]) * tmpaT + oce.THETAO.isel(time=ll,z=ksup[kk]) * tmpbT ) / tmpxT
+
+    tzz = np.squeeze(mp.horizontal_interp_nonan( lonT, latT, mlonlatsec, 1, lon_sect1d, lat_sect1d, tmp_SS ))
+    tzz[ (LEVOF_sect[kk,:] < 1.) | (np.isnan(DOMMSK_sect)) ] = missval
+    SO_sect[ll,kk,:] = tzz
+
+    tzz = np.squeeze(mp.horizontal_interp_nonan( lonT, latT, mlonlatsec, 1, lon_sect1d, lat_sect1d, tmp_TT ))
+    tzz[ (LEVOF_sect[kk,:] < 1.) | (np.isnan(DOMMSK_sect)) ] = missval
+    THETAO_sect[ll,kk,:] = tzz
+
+#--------------------------------------------------------------------------
+# 4b- Create new xarray dataset and save to netcdf
+
+dssect = xr.Dataset(
+    {
+    "so":        (["time", "depth", "x"], np.float32(SO_sect)),
+    "thetao":    (["time", "depth", "x"], np.float32(THETAO_sect)),
+    "levof":     (["depth", "x"], np.float32(LEVOF_sect)),
+    "longitude": (["x"], np.float32(lon_sect1d)),
+    "latitude": (["x"], np.float32(lat_sect1d)),
+    },
+    coords={
+    "depth": np.float32(dep_sect),
+    "time": oce.time.values
+    },
+)
+
+mp.add_standard_attributes(dssect,miss=missval)
+put_global_attrs(dssect,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='nemo_'+config+'_'+case,\
+                 original_min_lat=oce.attrs.get('original_minlat'),original_max_lat=oce.attrs.get('original_maxlat'),\
+                 original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
+print(dssect)
+
+file_sect = 'OceSec_'+model+'_'+exp+'_'+np.int32(yeari).astype('str')+'01_'+np.int32(yearf).astype('str')+'12.nc'
+
+dssect.to_netcdf(file_sect,unlimited_dims="time")
+
+del dssect
+del SO_sect, THETAO_sect
+
+#--------------------------------------------------------------------------
+# 5a- Interpolate to common mooring location :
+
+
+# Characteristics of MISOMIP mooring:
+[lon_moor0d,lat_moor0d,dep_moor] = mp.generate_mooring_grid(region=reg)
+mdepmoor = np.size(dep_moor)
+
+# Lower and upper indices for vertical interpolation:
+[kinf,ksup] = mp.vertical_interp(oce.depTUV.values,dep_moor)
+
+mtime = np.shape(oce.SO)[0]
+
+# mask showing the original domain (nan where interpolation of any of T, U, V grid is nan):
+DOMMSK_moor =               mp.horizontal_interp( lonT, latT, 1, 1, lon_moor0d, lat_moor0d, oce.DOMMSKT )
+DOMMSK_moor = DOMMSK_moor + mp.horizontal_interp( lonU, latU, 1, 1, lon_moor0d, lat_moor0d, oce.DOMMSKU )
+DOMMSK_moor = DOMMSK_moor + mp.horizontal_interp( lonV, latV, 1, 1, lon_moor0d, lat_moor0d, oce.DOMMSKV )
+
+# vertical then horizontal interpolation of constant 3d fields to common grid :
+LEVOF_moor = np.zeros((mdep)) + missval
+for kk in np.arange(mdep):
+  if ( kinf[kk] == ksup[kk] ):
+    tmpaT = 1.e0
+    tmpbT = 0.e0
+  else:
+    tmpaT = oce.depTUV.isel(z=ksup[kk]) - dep_moor[kk]
+    tmpbT = dep_moor[kk] - oce.depTUV.isel(z=kinf[kk])
+  tmpxT = tmpaT + tmpbT
+  tmp_OC = ( oce.LEVOF.isel(z=kinf[kk]) * tmpaT + oce.LEVOF.isel(z=ksup[kk]) * tmpbT ) / tmpxT
+  tzz = mp.horizontal_interp( lonT, latT, 1, 1, lon_moor0d, lat_moor0d, tmp_OC )
+  tzz[ np.isnan(DOMMSK_moor) ] = missval
+  LEVOF_moor[kk] = np.squeeze(tzz)
+
+SO_moor     = np.zeros((mtime,mdepmoor)) + missval
+THETAO_moor = np.zeros((mtime,mdepmoor)) + missval
+
+for ll in np.arange(mtime):
+  for kk in np.arange(mdepmoor):
+
+    if ( kinf[kk] == ksup[kk] ):
+      tmpaT = oce.maskT.isel(z=kinf[kk])
+      tmpbT = tmpaT*0
+    else:
+      tmpaT = oce.maskT.isel(z=kinf[kk]) * (oce.depTUV.isel(z=ksup[kk])-dep_moor[kk])
+      tmpbT = oce.maskT.isel(z=ksup[kk]) * (dep_moor[kk]-oce.depTUV.isel(z=kinf[kk]))
+    tmpxT = tmpaT + tmpbT
+    tmp_SS = ( oce.SO.isel(time=ll,z=kinf[kk]) * tmpaT + oce.SO.isel(time=ll,z=ksup[kk]) * tmpbT ) / tmpxT # Inf if no interpolable value
+    tmp_TT = ( oce.THETAO.isel(time=ll,z=kinf[kk]) * tmpaT + oce.THETAO.isel(time=ll,z=ksup[kk]) * tmpbT ) / tmpxT
+
+    tzz = np.squeeze(mp.horizontal_interp_nonan( lonT, latT, 1, 1, lon_moor0d, lat_moor0d, tmp_SS ))
+    tzz[ (LEVOF_moor[kk] < 1.) | (np.isnan(DOMMSK_moor)) ] = missval
+    SO_moor[ll,kk] = tzz
+
+    tzz = np.squeeze(mp.horizontal_interp_nonan( lonT, latT, 1, 1, lon_moor0d, lat_moor0d, tmp_TT ))
+    tzz[ (LEVOF_moor[kk] < 1.) | (np.isnan(DOMMSK_moor)) ] = missval
+    THETAO_moor[ll,kk] = tzz
+
+#--------------------------------------------------------------------------
+# 5b- Create new xarray dataset and save to netcdf
+
+dsmoor = xr.Dataset(
+    {
+    "so":        (["time", "depth"], np.float32(SO_moor)),
+    "thetao":    (["time", "depth"], np.float32(THETAO_moor)),
+    "levof":     (["depth"], np.float32(LEVOF_moor)),
+    },
+    coords={
+    "depth": np.float32(dep_moor),
+    "time": oce.time.values
+    },
+)
+
+mp.add_standard_attributes(dsmoor,miss=missval)
+put_global_attrs(dsmoor,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='nemo_'+config+'_'+case,\
+                 original_min_lat=oce.attrs.get('original_minlat'),original_max_lat=oce.attrs.get('original_maxlat'),\
+                 original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
+dsmoor.attrs['mooring_longitude'] = np.float32(lon_moor0d)
+dsmoor.attrs['mooring_latitude'] = np.float32(lat_moor0d)
+print(dsmoor)
+
+file_moor = 'OceMoor_'+model+'_'+exp+'_'+np.int32(yeari).astype('str')+'01_'+np.int32(yearf).astype('str')+'12.nc'
+
+dsmoor.to_netcdf(file_moor,unlimited_dims="time")
