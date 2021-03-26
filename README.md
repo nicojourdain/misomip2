@@ -1,6 +1,8 @@
 # misomip2
 A python package to postprocess model outputs to standard MISOMIP2 format and to analyse MISOMIP2 multi-model outputs.
 
+This package is largely based on [xarray](http://xarray.pydata.org) and [scipy.interpolate](https://docs.scipy.org/doc/scipy/reference/interpolate.html).
+
 ### Contributors
 Nicolas C. Jourdain (IGE, CNRS-UGA, Grenoble, France)
 
@@ -23,7 +25,7 @@ Then, the misomip2 fucntions can be imported from anywhere.
 ----------
 ----------
 
-## Preprocessing
+# Preprocessing
 Contains scripts that facilitate interpolation and formatting to the MISOMIP2 standards.
 
 To use the preprocessing tools, start by specifying:
@@ -43,7 +45,7 @@ _Exemple_:
 ```bash 
 [lon,lat,depth]=mp.generate_3d_grid(region='Weddell')
 ```
-<br/><br/>
+<br/>
 
 ### misomip2.preproc.generate\_section\_grid(region='Amundsen'):
 > Generates (longitude, latitude, depth) of the common MISOMIP2 section
@@ -54,7 +56,7 @@ _Exemple_:
 ```bash
 [lon,lat,depth]=mp.generate_section_grid(region='Weddell')
 ```
-<br/><br/>
+<br/>
 
 ### misomip2.preproc.generate\_mooring\_grid(region='Amundsen'):
 > Generates (longitude, latitude, depth) of the common MISOMIP2 mooring
@@ -103,7 +105,7 @@ dir= 'datadir/model/'
 ff = [ dir+'MITgcm_y2009.nc', dir+'MITgcm_y2010.nc', dir+'MITgcm_y2011.nc' ]
 ds = load_oce_mod_mitgcm(files_in=ff, rho0=1028.0, region='Weddell')
 ```
-<br/><br/>
+<br/>
 
 ### misomip2.preproc.load\_oce\_mod\_nemo(file\_mesh\_mask='mesh\_mask.nc', file\_bathy='bathy\_meter.nc', files\_gridT='nemo\_grid\_T.nc', files\_gridU='nemo\_grid\_U.nc', files\_gridV='nemo\_grid\_V.nc', files\_SBC='nemo\_flxT.nc', files\_ice='nemo\_icemod.nc', files\_BSF='nemo\_psi.nc', rho0=1026.0, teos10=False, region='Amundsen' ):
 > Read NEMO outputs and define an xarray dataset containing 
@@ -137,6 +139,7 @@ ds = load_oce_mod_nemo(files_gridT=fT,files_gridU=fU,files_gridV=fV,files_SBC=fS
 <br/><br/>
 
 The following functions are used for vertical and horizontal interpolation:
+
 ### misomip2.preproc.vertical\_interp(original\_depth,interpolated\_depth):
 > Find upper and lower bound indices for simple vertical interpolation
 >
@@ -148,7 +151,7 @@ _Example_:
 ```bash
 [kinf,ksup] = mp.vertical_interp(model_depth,dep_misomip)
 ```
-<br/><br/>
+<br/>
 
 ### misomip2.preproc.horizontal\_interp( lon\_in\_1d, lat\_in\_1d, mlat\_misomip, mlon\_misomip, lon\_out\_1d, lat\_out\_1d, var\_in\_1d ):
 > Interpolates one-dimension data horizontally to a 2d numpy array reshaped to the misomip standard (lon,lat) format.
@@ -167,7 +170,7 @@ _Example_:
 ```bash
 VAR_miso = mp.horizontal_interp( ds.lonT, ds.latT, mlat, mlon, lon_miso1d, lat_miso1d, ds.VAR )
 ```
-<br/><br/>
+<br/>
 
 ### misomip2.preproc.horizontal\_interp_nonan( lon\_in\_1d, lat\_in\_1d, mlat\_misomip, mlon\_misomip, lon\_out\_1d, lat\_out\_1d, var\_in\_1d ):
 > Interpolates one-dimension data horizontally to a 2d numpy array reshaped to the misomip standard (lon,lat) format.
@@ -192,8 +195,8 @@ VAR_miso = mp.horizontal_interp_nonan( ds.lonT, ds.latT, mlat, mlon, lon_miso1d,
 ----------
 ----------
 
-## Multi-model Analysis 
-Contains scripts to quickly plot multi-model diagnostics.
+# Multi-model Analysis 
+Contains scripts to quickly plot multi-model diagnostics. TO BE COMPLETED.
 
 To use the analysis tools, start by specifying:
 ```bash
@@ -201,4 +204,9 @@ import misomip2.analysis as ma
 ```
 <br/><br/>
 
-## Examples
+----------
+----------
+# Examples
+
+### interpolate\_to\_common\_grid.py
+This script has been used to interpolate NEMO and MITgcm outputs to the 3 misomip2 grids (3d grid, section, mooring). To use it, you need to adapt at least section 1 (Files and variables) and section 2 (Global attributes of output netcdf). You may need to create or modify a load\_oce\_mod\_xxxx function similar to the one existing for NEMO and MITgcm if your model is not covered yet.

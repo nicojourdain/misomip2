@@ -76,7 +76,7 @@ else:
 print(oce)
 
 #--------------------------------------------------------------------------
-# 2- Local function to put the apropriate global attributes in output netcdf :
+# 2- Global attributes of output netcdf :
 
 def put_global_attrs(ds,experiment='TBD',avg_hor_res_73S=0.0,original_sim_name='None',\
                      original_min_lat=-90.0,original_max_lat=90.0,original_min_lon=-180.0,original_max_lon=180.0):
