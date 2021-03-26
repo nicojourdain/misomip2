@@ -46,6 +46,7 @@ missval=9.969209968386869e36
 
 if ( model[0:4] == 'NEMO' ):
 
+   print('LOADING NEMO...')
    f_mesh   = data_dir+'/mesh_mask_AMUXL025_BedMachineAntarctica-2019-05-24.nc'
    f_bathy  = data_dir+'/bathy_meter_AMUXL025_BedMachineAntarctica-2019-05-24.nc'
    fs_gridT = [data_dir+'/'+config+'-'+case+'_1m_'+year.astype('str')+'0101_'+year.astype('str')+'1231_grid_T.nc' for year in np.arange(yeari,yearf+1)]
@@ -56,7 +57,6 @@ if ( model[0:4] == 'NEMO' ):
    # Barotropic Streamfunction calculated at U points using the cdfpsi function which is part of the cdftools (https://github.com/meom-group/CDFTOOLS):
    fs_BSF   = [data_dir+'/'+config+'-'+case+'_1m_'+year.astype('str')+'0101_'+year.astype('str')+'1231_psi.nc' for year in np.arange(yeari,yearf+1)]
 
-   print('LOADING NEMO...')
    oce = mp.load_oce_mod_nemo( file_mesh_mask=f_mesh, file_bathy=f_bathy, files_gridT=fs_gridT,\
                   files_gridU=fs_gridU, files_gridV=fs_gridV, files_SBC=fs_SBC, files_ice=fs_ice,\
                   files_BSF=fs_BSF, rho0=1026.0, teos10=True )
@@ -65,6 +65,7 @@ elif ( model[0:10] == 'MITGCM_UNN' ):
 
    print('LOADING MITGCM...')
    fs = data_dir+'MITgcm_output_example.nc'
+
    oce = mp.load_oce_mod_mitgcm( files_in=fs,\
                                       rho0=1026.0, teos10=False )
 

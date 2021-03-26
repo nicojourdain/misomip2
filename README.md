@@ -19,6 +19,7 @@ EOF
 ```
 Then, the misomip2 fucntions can be imported from anywhere.
 
+<br/><br/>
 ----------
 ----------
 
@@ -29,6 +30,7 @@ To use the preprocessing tools, start by specifying:
 ```bash
 import misomip2.preproc as mp
 ```
+<br/><br/>
 
 To generate the standard MISOMIP2 [lon,lat,depth] grids, use one of these fucntions:
 
@@ -41,6 +43,7 @@ _Exemple_:
 ```bash 
 [lon,lat,depth]=mp.generate_3d_grid(region='Weddell')
 ```
+<br/><br/>
 
 ### misomip2.preproc.generate\_section\_grid(region='Amundsen'):
 > Generates (longitude, latitude, depth) of the common MISOMIP2 section
@@ -51,6 +54,7 @@ _Exemple_:
 ```bash
 [lon,lat,depth]=mp.generate_section_grid(region='Weddell')
 ```
+<br/><br/>
 
 ### misomip2.preproc.generate\_mooring\_grid(region='Amundsen'):
 > Generates (longitude, latitude, depth) of the common MISOMIP2 mooring
@@ -61,6 +65,7 @@ _Exemple_:
 ```bash
 [lon,lat,depth]=mp.generate_mooring_grid(region='Weddell')
 ```
+<br/><br/>
 
 To put the MISOMIP2 standard attributes to the xarray dataset that will be saves as netcdf:
 
@@ -76,6 +81,7 @@ _Example_:
 ```bash
 mp.add_standard_attributes(dsmiso,miss=1.e20)
 ```
+<br/><br/>
 
 To load model outputs, either use an existing function or create a similar one if your model is not covered yet:
 
@@ -97,6 +103,7 @@ dir= 'datadir/model/'
 ff = [ dir+'MITgcm_y2009.nc', dir+'MITgcm_y2010.nc', dir+'MITgcm_y2011.nc' ]
 ds = load_oce_mod_mitgcm(files_in=ff, rho0=1028.0, region='Weddell')
 ```
+<br/><br/>
 
 ### misomip2.preproc.load\_oce\_mod\_nemo(file\_mesh\_mask='mesh\_mask.nc', file\_bathy='bathy\_meter.nc', files\_gridT='nemo\_grid\_T.nc', files\_gridU='nemo\_grid\_U.nc', files\_gridV='nemo\_grid\_V.nc', files\_SBC='nemo\_flxT.nc', files\_ice='nemo\_icemod.nc', files\_BSF='nemo\_psi.nc', rho0=1026.0, teos10=False, region='Amundsen' ):
 > Read NEMO outputs and define an xarray dataset containing 
@@ -127,7 +134,60 @@ fI = [ dir+'nemo_y2009_icemod.nc', dir+'nemo_y2010_icemod.nc' ]
 fP = [ dir+'nemo_y2009_psi.nc', dir+'nemo_y2010_psi.nc' ]
 ds = load_oce_mod_nemo(files_gridT=fT,files_gridU=fU,files_gridV=fV,files_SBC=fS,files_ice=fI,files_BSF=fP,rho0=1028.0,teos10=True,region='Weddell')
 ```
+<br/><br/>
 
+The following functions are used for vertical and horizontal interpolation:
+### misomip2.preproc.vertical\_interp(original\_depth,interpolated\_depth):
+> Find upper and lower bound indices for simple vertical interpolation
+>
+>    original\_depth: 1d numpy array
+>
+>    interpolated\_depth: 1d numpy array
+>
+_Example_:
+```bash
+[kinf,ksup] = mp.vertical_interp(model_depth,dep_misomip)
+```
+<br/><br/>
+
+### misomip2.preproc.horizontal\_interp( lon\_in\_1d, lat\_in\_1d, mlat\_misomip, mlon\_misomip, lon\_out\_1d, lat\_out\_1d, var\_in\_1d ):
+> Interpolates one-dimension data horizontally to a 2d numpy array reshaped to the misomip standard (lon,lat) format.
+>
+>    Method: triangular linear barycentryc interpolation, using nans (i.e. gives nan if any nan in the triangle)
+>
+>    lon\_in\_1d, lat\_in\_1d: 1d longitude and latitude of data to interpolate
+>
+>    var\_in\_1d: 1d input data (same dimension as lon\_in\_1d and lat\_in\_1d)
+>
+>    mlat\_misomip, mlon\_misomip: misomip grid size (nb points) alond latitude and longitude dimensions
+>
+>    lon\_out\_1d, lat\_out\_1d: 1d longitude and latitude of the target misomip grid
+>
+_Example_:
+```bash
+VAR_miso = mp.horizontal_interp( ds.lonT, ds.latT, mlat, mlon, lon_miso1d, lat_miso1d, ds.VAR )
+```
+<br/><br/>
+
+### misomip2.preproc.horizontal\_interp_nonan( lon\_in\_1d, lat\_in\_1d, mlat\_misomip, mlon\_misomip, lon\_out\_1d, lat\_out\_1d, var\_in\_1d ):
+> Interpolates one-dimension data horizontally to a 2d numpy array reshaped to the misomip standard (lon,lat) format.
+>
+>    Method: triangular linear barycentryc interpolation, NOT USING NANs (i.e. find triangle with non-nan values)
+>            and nearest-neighbor interpolations for points not surrounded by 3 data points.
+>
+>    lon\_in\_1d, lat\_in\_1d: 1d longitude and latitude of data to interpolate
+>
+>    var\_in\_1d: 1d input data (same dimension as lon\_in\_1d and lat\_in\_1d)
+>
+>    mlat\_misomip, mlon\_misomip: misomip grid size (nb points) alond latitude and longitude dimensions
+>
+>    lon\_out\_1d, lat\_out\_1d: 1d longitude and latitude of the target misomip grid
+>
+_Example_:
+```bash
+VAR_miso = mp.horizontal_interp_nonan( ds.lonT, ds.latT, mlat, mlon, lon_miso1d, lat_miso1d, ds.VAR )
+```
+<br/><br/>
 
 ----------
 ----------
@@ -139,5 +199,6 @@ To use the analysis tools, start by specifying:
 ```bash
 import misomip2.analysis as ma
 ```
+<br/><br/>
 
 ## Examples
