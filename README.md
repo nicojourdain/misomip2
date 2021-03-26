@@ -7,19 +7,20 @@ Nicolas C. Jourdain (IGE, CNRS-UGA, Grenoble, France)
 ### Install
 This may be moved to anaconda, but for now, here is the way to proceed:
 ```bash
-export WORK=/User/wmunk/MY_PACKAGES # to be adapted
-cd $WORK # or whatever
+export MYPACK=/User/wmunk/MY_PACKAGES # to be adapted
+cd $MYPACK
 
 git clone https://github.com/nicojourdain/misomip2.git
 # or git clone git@github.com:nicojourdain/misomip2.git
 
 cat << EOF >> ~/.bashrc # or .bash_profile or .profile or equivalent
-export PYTHONPATH="${WORK}:\$PYTHONPATH"
+export PYTHONPATH="${MYPACK}:\$PYTHONPATH"
 EOF
 ```
 Then, the misomip2 fucntions can be imported from anywhere.
 
------
+----------
+----------
 
 ## Preprocessing
 Contains scripts that facilitate interpolation and formatting to the MISOMIP2 standards.
@@ -130,7 +131,8 @@ ds = load_oce_mod_nemo(files_gridT=fT,files_gridU=fU,files_gridV=fV,files_SBC=fS
 ```
 
 
-=====
+----------
+----------
 
 ## Multi-model Analysis 
 Contains scripts to quickly plot multi-model diagnostics.
