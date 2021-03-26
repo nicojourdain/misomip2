@@ -209,4 +209,4 @@ import misomip2.analysis as ma
 # Examples
 
 ### interpolate\_to\_common\_grid.py
-This script has been used to interpolate NEMO and MITgcm outputs to the 3 misomip2 grids (3d grid, section, mooring). To use it, you need to adapt at least section 1 (Files and variables) and section 2 (Global attributes of output netcdf). You may need to create or modify a load\_oce\_mod\_xxxx function similar to the one existing for NEMO and MITgcm if your model is not covered yet.
+This script has been used to interpolate NEMO and MITgcm outputs to the 3 misomip2 grids (3d grid, section, mooring). To use it, you need to adapt at least section 0 (General information), section 1 (Files and variables) and section 2 (Global attributes of output netcdf). For section1, ou may need to create or modify a load\_oce\_mod\_xxxx function similar to the one existing for NEMO and MITgcm if your model is not covered yet.
