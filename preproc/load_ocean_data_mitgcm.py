@@ -184,10 +184,10 @@ def load_oce_mod_mitgcm(files_in='MITgcm_output.nc',\
 
    # ocean potential temperature and practical salinity :
    if (teos10):
-     TOB = xr.apply_ufunc(gsw.pt_from_CT, SSB, TTB)
-     SOB = xr.apply_ufunc(gsw.SP_from_SA, SSB, DEPTHO, lonT, latT)
-     THETAO = xr.apply_ufunc(gsw.pt_from_CT, SS, TT)
-     SO = xr.apply_ufunc(gsw.SP_from_SA, SS, DEPTHO, lonT, latT)
+     TOB = xr.apply_ufunc(gsw.pt_from_CT, SSB, TTB, dask = 'allowed')
+     SOB = xr.apply_ufunc(gsw.SP_from_SA, SSB, DEPTHO, lonT, latT, dask = 'allowed')
+     THETAO = xr.apply_ufunc(gsw.pt_from_CT, SS, TT, dask = 'allowed')
+     SO = xr.apply_ufunc(gsw.SP_from_SA, SS, DEPTHO, lonT, latT, dask = 'allowed')
    else: 
      TOB = TTB
      SOB = SSB
