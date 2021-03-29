@@ -120,7 +120,7 @@ def put_global_attrs(ds,experiment='TBD',avg_hor_res_73S=0.0,original_sim_name='
 
 
 # Characteristics of MISOMIP 3d grid:
-[lon_miso,lat_miso,dep_miso] = mp.generate_3d_grid(region=reg)
+[lon_miso,lat_miso,dep_miso] = mp.generate_3d_grid_oce(region=reg)
 mlon = np.size(lon_miso)
 mlat = np.size(lat_miso)
 mdep = np.size(dep_miso)
@@ -376,7 +376,7 @@ del SO_miso, THETAO_miso, UO_miso, VO_miso
 # 4a- Interpolate to common section :
 
 # Characteristics of MISOMIP section grid:
-[lon_sect1d,lat_sect1d,dep_sect] = mp.generate_section_grid(region=reg)
+[lon_sect1d,lat_sect1d,dep_sect] = mp.generate_section_grid_oce(region=reg)
 mlonlatsec = np.size(lon_sect1d)
 mdepsect = np.size(dep_sect)
 
@@ -463,7 +463,7 @@ del SO_sect, THETAO_sect
 
 
 # Characteristics of MISOMIP mooring:
-[lon_moor0d,lat_moor0d,dep_moor] = mp.generate_mooring_grid(region=reg)
+[lon_moor0d,lat_moor0d,dep_moor] = mp.generate_mooring_grid_oce(region=reg)
 mdepmoor = np.size(dep_moor)
 
 # Lower and upper indices for vertical interpolation:
