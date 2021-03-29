@@ -11,7 +11,7 @@ If you don't have a python environment yet, you can install anaconda following [
 
 This package may become an anaconda package at some stage, but it is not the case yet, and for now, here is the way to proceed:
 
-If these modules are not installed (check with ```bash conda list```), install them:
+If these modules are not installed (check with ```conda list```), install them:
 ```bash
 conda install numpy xarray scipy
 conda install dask pyproj gsw
