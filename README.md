@@ -17,7 +17,7 @@ conda install numpy xarray scipy
 conda install dask pyproj gsw
 ```
 
-Then, to enable the import of misomip2 functions from anywhere, do:
+Then, to clone the misomip2 package and enable the import of misomip2 functions from anywhere, do:
 
 ```bash
 export MYPACK=/User/wmunk/MY_PACKAGES # to be adapted
@@ -30,6 +30,9 @@ cat << EOF >> ~/.bashrc # or .bash_profile or .profile or equivalent
 export PYTHONPATH="${MYPACK}:\$PYTHONPATH"
 EOF
 ```
+
+You can update the cloned directory anytime with ```git pull``` executed in that directory. 
+
 
 <br/><br/>
 ----------
