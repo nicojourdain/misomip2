@@ -94,17 +94,17 @@ _Exemple_:
 
 To put the MISOMIP2 standard attributes to the xarray dataset that will be saved as netcdf:
 
-### misomip2.preproc.add\_standard\_attributes(ds,miss=9.969209968386869e36):
-> Define standard netcdf attributes for variables that are already present in the ds xarray dataset.
+### misomip2.preproc.add\_standard\_attributes\_oce(ds,miss=9.969209968386869e36):
+> Define standard netcdf attributes for ocean variables that are already present in the ds xarray dataset.
 > (these variables must have the MISOMIP2 standard variable names)
 > 
->    ds: xarray dataset
+>    ds: xarray ocean dataset
 >
 >    miss: missing value (default=9.969209968386869e36)
 >
 _Example_:
 ```bash
-mp.add_standard_attributes(dsmiso,miss=1.e20)
+mp.add_standard_attributes_oce(dsmiso,miss=1.e20)
 ```
 <br/><br/>
 
@@ -233,5 +233,5 @@ import misomip2.analysis as ma
 
 People who use the misomip2 package to interpolate their model results to the MISOMIP2 grids are invited to provide their scripts.
 
-### interpolate\_to\_common\_grid.py
+### interpolate\_to\_common\_grid\_oce.py
 > This script has been used to interpolate NEMO and MITgcm outputs to the 3 misomip2 grids (3d grid, section, mooring). To use it, you need to adapt at least section 0 (General information), section 1 (Files and variables) and section 2 (Global attributes of output netcdf). For section1, ou may need to create or modify a load\_oce\_mod\_xxxx function similar to the one existing for NEMO and MITgcm if your model is not covered yet.

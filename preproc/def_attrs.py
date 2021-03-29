@@ -1,10 +1,10 @@
 # 2021-03 : Initial code [N. Jourdain, IGE-CNRS]
 
 #====================================================================================================
-def add_standard_attributes(ds,miss=9.969209968386869e36):
-  """Define standard netcdf attributes for variables already present in the ds xarray dataset.
+def add_standard_attributes_oce(ds,miss=9.969209968386869e36):
+  """Define standard netcdf attributes for ocean variables already present in the ds xarray dataset.
 
-     ds : xarray dataset
+     ds : xarray ocean dataset
      miss : missing value (default=9.969209968386869e36)
   
   """
@@ -56,7 +56,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.so.attrs['units'] = '0.001'
      ds.so.attrs['long_name'] = 'Sea Water Salinity (practical salinity)'
      ds.so.attrs['standard_name'] = 'sea_water_salinity' 
-     ds.so.attrs['cell_method'] = 'area: mean where sea'
+     ds.so.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
 
   if ( "thetao" in ds.data_vars ):
      print('define attributes for variable thetao')
@@ -64,7 +64,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.thetao.attrs['units'] = 'degC'
      ds.thetao.attrs['long_name'] = 'Sea Water Potential Temperature'
      ds.thetao.attrs['standard_name'] = 'sea_water_potential_temperature'
-     ds.thetao.attrs['cell_method'] = 'area: mean where sea'
+     ds.thetao.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
 
   if ( "zos" in ds.data_vars ):
      print('define attributes for variable zos')
@@ -72,7 +72,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.zos.attrs['units'] = 'm'
      ds.zos.attrs['long_name'] = 'Sea Surface Height Above Geoid'
      ds.zos.attrs['standard_name'] = 'sea_surface_height_above_geoid'
-     ds.zos.attrs['cell_method'] = 'area: mean where sea'
+     ds.zos.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
 
   #if ( "bigthetao" in ds.data_vars ):
   #   print('define attributes for variable bigthetao')
@@ -88,7 +88,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.tob.attrs['units'] = 'degC'
      ds.tob.attrs['long_name'] = 'Sea Water Potential Temperature at Sea Floor'
      ds.tob.attrs['standard_name'] = 'sea_water_potential_temperature_at_sea_floor'
-     ds.tob.attrs['cell_method'] = 'area: mean where sea'
+     ds.tob.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
 
   if ( "sob" in ds.data_vars ):
      print('define attributes for variable sob')
@@ -96,7 +96,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.sob.attrs['units'] = '0.001'
      ds.sob.attrs['long_name'] = 'Sea Water Salinity at Sea Floor (Practical Salinity)'
      ds.sob.attrs['standard_name'] = 'sea_water_salinity_at_sea_floor'
-     ds.sob.attrs['cell_method'] = 'area: mean where sea'
+     ds.sob.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
 
   if ( "uo" in ds.data_vars ):
      print('define attributes for variable uo')
@@ -104,7 +104,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.uo.attrs['units'] = 'm s-1'
      ds.uo.attrs['long_name'] = 'Sea Water X Velocity (Zonal)'
      ds.uo.attrs['standard_name'] = 'sea_water_x_velocity'
-     ds.uo.attrs['cell_method'] = 'area: mean where sea'
+     ds.uo.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
 
   if ( "vo" in ds.data_vars ):
      print('define attributes for variable vo')
@@ -112,7 +112,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.vo.attrs['units'] = 'm s-1'
      ds.vo.attrs['long_name'] = 'Sea Water Y Velocity (Meridional)'
      ds.vo.attrs['standard_name'] = 'sea_water_y_velocity'
-     ds.vo.attrs['cell_method'] = 'area: mean where sea'
+     ds.vo.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
 
   #if ( "wfo" in ds.data_vars ):
   #   print('define attributes for variable wfo')
@@ -120,7 +120,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
   #   ds.wfo.attrs['units'] = 'kg m-2 s-1'
   #   ds.wfo.attrs['long_name'] = 'Water Flux into Sea Water (precipitation, river runoff, sea ice, iceberg, ice shelf, restoring)'
   #   ds.wfo.attrs['standard_name'] = 'water_flux_into_sea_water'
-  #   ds.wfo.attrs['cell_method'] = 'area: mean where sea'
+  #   ds.wfo.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
   #   ds.wfo.attrs['positive'] = 'down'
 
   if ( "wfoatrli" in ds.data_vars ):
@@ -129,7 +129,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.wfoatrli.attrs['units'] = 'kg m-2 s-1'
      ds.wfoatrli.attrs['long_name'] = 'Water Flux into Sea Water from Atmosphere, Rivers, and Land Ice'
      ds.wfoatrli.attrs['standard_name'] = 'water_flux_into_sea_water_from_atmosphere_rivers_land_ice'
-     ds.wfoatrli.attrs['cell_method'] = 'area: mean where sea'
+     ds.wfoatrli.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
      ds.wfoatrli.attrs['positive'] = 'down'
 
   if ( "wfosicor" in ds.data_vars ):
@@ -138,7 +138,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.wfosicor.attrs['units'] = 'kg m-2 s-1'
      ds.wfosicor.attrs['long_name'] = 'Water Flux into Sea Water Due to Sea Ice Thermodynamics and Correction (restoring)'
      ds.wfosicor.attrs['standard_name'] = 'water_flux_into_sea_water_due_to_sea_ice_thermodynamics_and_correction'
-     ds.wfosicor.attrs['cell_method'] = 'area: mean where sea'
+     ds.wfosicor.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
      ds.wfosicor.attrs['positive'] = 'down'
 
   if ( "hfds" in ds.data_vars ):
@@ -147,7 +147,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.hfds.attrs['units'] = 'W m-2'
      ds.hfds.attrs['long_name'] = 'Downward Heat Flux at Sea Water Surface (net shortwave and longwave radiative fluxes, sensible and latent heat fluxes)'
      ds.hfds.attrs['standard_name'] = 'surface_downward_heat_flux_in_sea_water'
-     ds.hfds.attrs['cell_method'] = 'area: mean where sea'
+     ds.hfds.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
      ds.hfds.attrs['positive'] = 'down'
 
   if ( "tauuo" in ds.data_vars ):
@@ -156,7 +156,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.tauuo.attrs['units'] = 'N m-2'
      ds.tauuo.attrs['long_name'] = 'Sea Water Surface Downward X Stress (stress on the liquid ocean from overlying atmosphere, sea ice, ice shelf, etc.)'
      ds.tauuo.attrs['standard_name'] = 'downward_x_stress_at_sea_water_surface'
-     ds.tauuo.attrs['cell_method'] = 'area: mean where sea'
+     ds.tauuo.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
      ds.tauuo.attrs['positive'] = 'down'
 
   if ( "tauvo" in ds.data_vars ):
@@ -165,7 +165,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.tauvo.attrs['units'] = 'N m-2'
      ds.tauvo.attrs['long_name'] = 'Sea Water Surface Downward Y Stress (stress on the liquid ocean from overlying atmosphere, sea ice, ice shelf, etc.)'
      ds.tauvo.attrs['standard_name'] = 'downward_y_stress_at_sea_water_surface'
-     ds.tauvo.attrs['cell_method'] = 'area: mean where sea'
+     ds.tauvo.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
      ds.tauvo.attrs['positive'] = 'down'
 
   if ( "msftbarot" in ds.data_vars ):
@@ -174,7 +174,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.msftbarot.attrs['units'] = 'kg s-1'
      ds.msftbarot.attrs['long_name'] = 'Ocean Barotropic Mass Streamfunction'
      ds.msftbarot.attrs['standard_name'] = ''
-     ds.msftbarot.attrs['cell_method'] = 'area: mean where sea'
+     ds.msftbarot.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
 
   if ( "ficeshelf" in ds.data_vars ):
      print('define attributes for variable ficeshelf')
@@ -182,7 +182,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.ficeshelf.attrs['units'] = 'kg m-2 s-1'
      ds.ficeshelf.attrs['long_name'] = 'Water Flux into Sea Water from Ice Shelf Basal Melting (negative for refreezing)'
      ds.ficeshelf.attrs['standard_name'] = 'water_flux_into_sea_water_from_iceshelf'
-     ds.ficeshelf.attrs['cell_method'] = 'area: mean where sea'
+     ds.ficeshelf.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
 
   #if ( "ficeberg" in ds.data_vars ):
   #   print('define attributes for variable ficeberg')
@@ -190,7 +190,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
   #   ds.ficeberg.attrs['units'] = 'kg m-2 s-1'
   #   ds.ficeberg.attrs['long_name'] = 'Water Flux into Sea Water from Icebergs'
   #   ds.ficeberg.attrs['standard_name'] = 'water_flux_into_sea_water_from_icebergs'
-  #   ds.ficeberg.attrs['cell_method'] = 'area: mean where sea'
+  #   ds.ficeberg.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
 
   if ( "siconc" in ds.data_vars ):
      print('define attributes for variable siconc')
@@ -198,7 +198,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.siconc.attrs['units'] = '%'
      ds.siconc.attrs['long_name'] = 'Sea-Ice Area Percentage'
      ds.siconc.attrs['standard_name'] = 'sea_ice_area_fraction'
-     ds.siconc.attrs['cell_method'] = 'area: mean where sea'
+     ds.siconc.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
 
   if ( "sivol" in ds.data_vars ):
      print('define attributes for variable sivol')
@@ -206,7 +206,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.sivol.attrs['units'] = 'm'
      ds.sivol.attrs['long_name'] = 'Sea-Ice Volume per Area'
      ds.sivol.attrs['standard_name'] = 'sea_ice_thickness'
-     ds.sivol.attrs['cell_method'] = 'area: mean where sea'
+     ds.sivol.attrs['cell_method'] = 'area: mean where sea; time: monthly mean'
 
   if ( "siu" in ds.data_vars ):
      print('define attributes for variable siu')
@@ -214,7 +214,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.siu.attrs['units'] = 'm s-1'
      ds.siu.attrs['long_name'] = 'X-Component of Sea-Ice Velocity (Zonal)'
      ds.siu.attrs['standard_name'] = 'sea_ice_x_velocity'
-     ds.siu.attrs['cell_method'] = 'area: mean where sea-ice'
+     ds.siu.attrs['cell_method'] = 'area: mean where sea-ice; time: monthly mean'
 
   if ( "siv" in ds.data_vars ):
      print('define attributes for variable siv')
@@ -222,7 +222,7 @@ def add_standard_attributes(ds,miss=9.969209968386869e36):
      ds.siv.attrs['units'] = 'm s-1'
      ds.siv.attrs['long_name'] = 'Y-Component of Sea-Ice Velocity (Meridional)'
      ds.siv.attrs['standard_name'] = 'sea_ice_y_velocity'
-     ds.siv.attrs['cell_method'] = 'area: mean where sea-ice'
+     ds.siv.attrs['cell_method'] = 'area: mean where sea-ice; time: monthly mean'
 
   if ( "deptho" in ds.data_vars ):
      print('define attributes for variable deptho')

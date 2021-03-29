@@ -359,7 +359,7 @@ dsmiso3d = xr.Dataset(
     },
 )
 
-mp.add_standard_attributes(dsmiso3d,miss=missval)
+mp.add_standard_attributes_oce(dsmiso3d,miss=missval)
 put_global_attrs(dsmiso3d,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='nemo_'+config+'_'+case,\
                  original_min_lat=oce.attrs.get('original_minlat'),original_max_lat=oce.attrs.get('original_maxlat'),\
                  original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
@@ -445,7 +445,7 @@ dssect = xr.Dataset(
     },
 )
 
-mp.add_standard_attributes(dssect,miss=missval)
+mp.add_standard_attributes_oce(dssect,miss=missval)
 put_global_attrs(dssect,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='nemo_'+config+'_'+case,\
                  original_min_lat=oce.attrs.get('original_minlat'),original_max_lat=oce.attrs.get('original_maxlat'),\
                  original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
@@ -533,7 +533,7 @@ dsmoor = xr.Dataset(
     },
 )
 
-mp.add_standard_attributes(dsmoor,miss=missval)
+mp.add_standard_attributes_oce(dsmoor,miss=missval)
 put_global_attrs(dsmoor,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='nemo_'+config+'_'+case,\
                  original_min_lat=oce.attrs.get('original_minlat'),original_max_lat=oce.attrs.get('original_maxlat'),\
                  original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
