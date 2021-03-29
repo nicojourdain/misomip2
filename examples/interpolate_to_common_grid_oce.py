@@ -21,23 +21,15 @@ np.seterr(divide='ignore', invalid='ignore') # to avoid warning due to divide by
 #--------------------------------------------------------------------------
 # 0- General information:
 
-# Original NEMO config & case :
-config='AMUXL025'
-case='GNJ004_BM02'
-
 # Official name in MISOMIP2:
-model='NEMO3.6_IGE-CNRS-UGA_AMUXL025a'
-#model='MITGCM_UNN_AMUNDSEN'
+model='NEMO_test'
+#model='MITGCM_test'
 
 reg='Amundsen' # 'Amundsen' or 'Weddell'
 
 exp='A1' # MISOMIP2 experiment ('A1', 'W1', 'A2', ...)
 
-# Time period :
-yeari=2010
-yearf=2012
-
-data_dir='/Users/jourdain/MISOMIP2/MODEL_OUTPUTS/'+model+'/ORIGINAL'
+data_dir='models/oce/'+model
 
 missval=9.969209968386869e36
 
@@ -50,24 +42,24 @@ missval=9.969209968386869e36
 if ( model[0:4] == 'NEMO' ):
 
    print('LOADING NEMO...')
-   f_mesh   = data_dir+'/mesh_mask_AMUXL025_BedMachineAntarctica-2019-05-24.nc'
-   f_bathy  = data_dir+'/bathy_meter_AMUXL025_BedMachineAntarctica-2019-05-24.nc'
-   fs_gridT = [data_dir+'/'+config+'-'+case+'_1m_'+year.astype('str')+'0101_'+year.astype('str')+'1231_grid_T.nc' for year in np.arange(yeari,yearf+1)]
-   fs_gridU = [data_dir+'/'+config+'-'+case+'_1m_'+year.astype('str')+'0101_'+year.astype('str')+'1231_grid_U.nc' for year in np.arange(yeari,yearf+1)]
-   fs_gridV = [data_dir+'/'+config+'-'+case+'_1m_'+year.astype('str')+'0101_'+year.astype('str')+'1231_grid_V.nc' for year in np.arange(yeari,yearf+1)]
-   fs_SBC   = [data_dir+'/'+config+'-'+case+'_1m_'+year.astype('str')+'0101_'+year.astype('str')+'1231_SBC.nc' for year in np.arange(yeari,yearf+1)]
-   fs_ice   = [data_dir+'/'+config+'-'+case+'_1m_'+year.astype('str')+'0101_'+year.astype('str')+'1231_icemod.nc' for year in np.arange(yeari,yearf+1)]
+   f_mesh   = data_dir+'/mesh_mask_test.nc'
+   f_bathy  = data_dir+'/bathy_meter_test.nc'
+   fs_gridT = [data_dir+'/'+model+'_m0'+month.astype('str')+'_grid_T.nc' for month in np.arange(1,3)]
+   fs_gridU = [data_dir+'/'+model+'_m0'+month.astype('str')+'_grid_U.nc' for month in np.arange(1,3)]
+   fs_gridV = [data_dir+'/'+model+'_m0'+month.astype('str')+'_grid_V.nc' for month in np.arange(1,3)]
+   fs_SBC   = [data_dir+'/'+model+'_m0'+month.astype('str')+'_SBC.nc' for month in np.arange(1,3)]
+   fs_ice   = [data_dir+'/'+model+'_m0'+month.astype('str')+'_icemod.nc' for month in np.arange(1,3)]
    # Barotropic Streamfunction calculated at U points using the cdfpsi function which is part of the cdftools (https://github.com/meom-group/CDFTOOLS):
-   fs_BSF   = [data_dir+'/'+config+'-'+case+'_1m_'+year.astype('str')+'0101_'+year.astype('str')+'1231_psi.nc' for year in np.arange(yeari,yearf+1)]
+   fs_BSF   = [data_dir+'/'+model+'_m0'+month.astype('str')+'_psi.nc' for month in np.arange(1,3)]
 
    oce = mp.load_oce_mod_nemo( file_mesh_mask=f_mesh, file_bathy=f_bathy, files_gridT=fs_gridT,\
                   files_gridU=fs_gridU, files_gridV=fs_gridV, files_SBC=fs_SBC, files_ice=fs_ice,\
                   files_BSF=fs_BSF, rho0=1026.0, teos10=True )
 
-elif ( model[0:10] == 'MITGCM_UNN' ):
+elif ( model[0:6] == 'MITGCM' ):
 
    print('LOADING MITGCM...')
-   fs = data_dir+'MITgcm_output_example.nc'
+   fs = data_dir+'/'+model+'.nc'
 
    oce = mp.load_oce_mod_mitgcm( files_in=fs,\
                                       rho0=1026.0, teos10=False )
@@ -365,7 +357,7 @@ put_global_attrs(dsmiso3d,experiment=exp,avg_hor_res_73S=res_73S,original_sim_na
                  original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
 print(dsmiso3d)
 
-file_miso3d = 'Oce3d_'+model+'_'+exp+'_'+np.int32(yeari).astype('str')+'01_'+np.int32(yearf).astype('str')+'12.nc'
+file_miso3d = 'Oce3d_'+model+'_'+exp+'.nc'
 
 dsmiso3d.to_netcdf(file_miso3d,unlimited_dims="time")
 
@@ -451,7 +443,7 @@ put_global_attrs(dssect,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name
                  original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
 print(dssect)
 
-file_sect = 'OceSec_'+model+'_'+exp+'_'+np.int32(yeari).astype('str')+'01_'+np.int32(yearf).astype('str')+'12.nc'
+file_sect = 'OceSec_'+model+'_'+exp+'.nc'
 
 dssect.to_netcdf(file_sect,unlimited_dims="time")
 
@@ -541,6 +533,6 @@ dsmoor.attrs['mooring_longitude'] = np.float32(lon_moor0d)
 dsmoor.attrs['mooring_latitude'] = np.float32(lat_moor0d)
 print(dsmoor)
 
-file_moor = 'OceMoor_'+model+'_'+exp+'_'+np.int32(yeari).astype('str')+'01_'+np.int32(yearf).astype('str')+'12.nc'
+file_moor = 'OceMoor_'+model+'_'+exp+'.nc'
 
 dsmoor.to_netcdf(file_moor,unlimited_dims="time")
