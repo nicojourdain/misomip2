@@ -4,7 +4,10 @@ A python package to postprocess model outputs to standard MISOMIP2 format and to
 This package is written for python3 and largely based on [xarray](http://xarray.pydata.org) and [scipy.interpolate](https://docs.scipy.org/doc/scipy/reference/interpolate.html).
 
 ### Contributors
-Nicolas C. Jourdain (IGE, CNRS-UGA, Grenoble, France)
+* Nicolas C. Jourdain (IGE, CNRS-UGA, Grenoble, France)
+* Jan De Rydt (U. Northumbria Newcastle, UK)
+
+All MISOMIP participants who want to contribute to this package are invited to fork this github repo and make a pull request as [documented here](https://opensource.com/article/19/7/create-pull-request-github).
 
 ### Install
 If you don't have a python environment yet, you can install anaconda following [this page](https://docs.anaconda.com/anaconda/install/).

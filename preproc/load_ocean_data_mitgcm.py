@@ -9,12 +9,12 @@ from .def_grids import grid_bounds_oce
 
 #====================================================================================
 def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
-                        files_S=files_T,\
-                        files_U=files_T,\
-                        files_V=files_T,\
-                        files_I=files_T,\
-                        files_SRF=files_T,\
-                        files_M=files_T,\
+                        files_S='dummy',\
+                        files_U='dummy',\
+                        files_V='dummy',\
+                        files_I='dummy',\
+                        files_SRF='dummy',\
+                        files_M='dummy',\
                         rho0=1026.0, teos10=False, region='Amundsen' ):
    """ Read MITgcm outputs and define an xarray dataset containing 
        all variables required in MISOMIP2. It automatically detects
@@ -43,6 +43,20 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
           ds = load_oce_mod_mitgcm(files_T=ff, rho0=1028.0, region='Weddell')
 
    """
+
+   # if only files_T are specified, use it for all variables:
+   if ( files_S == 'dummy' ):
+      files_S = files_T
+   if ( files_U == 'dummy' ):
+      files_U = files_T
+   if ( files_V == 'dummy' ):
+      files_V = files_T
+   if ( files_I == 'dummy' ):
+      files_I = files_T
+   if ( files_SRF == 'dummy' ):
+      files_SRF = files_T
+   if ( files_M == 'dummy' ):
+      files_M = files_T
 
    RT = 6.371e6 # Earth radius in meters
 
@@ -274,7 +288,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    else:
      print('@@@@@ WARNING @@@@@   No data found for ZOS  -->  filled with NaNs')
      ZOS = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
-V
+
    # mass barotropic streamfunction
    # see Griffies et al. (2016, section H26): d(psi)/dy=-U (U: x-ward mass transport), d(psi)/dx=V (V: yward mass transport)
    if ( "sobarstf" in ncU.data_vars ):

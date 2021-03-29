@@ -22,8 +22,8 @@ np.seterr(divide='ignore', invalid='ignore') # to avoid warning due to divide by
 # 0- General information:
 
 # Official name in MISOMIP2:
-model='NEMO_test'
-#model='MITGCM_test'
+#model='NEMO_test'
+model='MITGCM_test'
 
 reg='Amundsen' # 'Amundsen' or 'Weddell'
 
@@ -59,10 +59,12 @@ if ( model[0:4] == 'NEMO' ):
 elif ( model[0:6] == 'MITGCM' ):
 
    print('LOADING MITGCM...')
-   fs = data_dir+'/'+model+'.nc'
+   fT = data_dir+'/'+model+'_THETA.nc'
+   fS = data_dir+'/'+model+'_SALT.nc'
+   fU = data_dir+'/'+model+'_UVEL.nc'
+   fV = data_dir+'/'+model+'_VVEL.nc'
 
-   oce = mp.load_oce_mod_mitgcm( files_in=fs,\
-                                      rho0=1026.0, teos10=False )
+   oce = mp.load_oce_mod_mitgcm( files_T=fT, files_S=fS, files_U=fU, files_V=fV, rho0=1026.0, teos10=False )
 
 else:
 
@@ -352,7 +354,7 @@ dsmiso3d = xr.Dataset(
 )
 
 mp.add_standard_attributes_oce(dsmiso3d,miss=missval)
-put_global_attrs(dsmiso3d,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='nemo_'+config+'_'+case,\
+put_global_attrs(dsmiso3d,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='misomip2_test_case',\
                  original_min_lat=oce.attrs.get('original_minlat'),original_max_lat=oce.attrs.get('original_maxlat'),\
                  original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
 print(dsmiso3d)
@@ -438,7 +440,7 @@ dssect = xr.Dataset(
 )
 
 mp.add_standard_attributes_oce(dssect,miss=missval)
-put_global_attrs(dssect,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='nemo_'+config+'_'+case,\
+put_global_attrs(dssect,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='misomip2_test_case',\
                  original_min_lat=oce.attrs.get('original_minlat'),original_max_lat=oce.attrs.get('original_maxlat'),\
                  original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
 print(dssect)
@@ -526,7 +528,7 @@ dsmoor = xr.Dataset(
 )
 
 mp.add_standard_attributes_oce(dsmoor,miss=missval)
-put_global_attrs(dsmoor,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='nemo_'+config+'_'+case,\
+put_global_attrs(dsmoor,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='misomip2_test_case',\
                  original_min_lat=oce.attrs.get('original_minlat'),original_max_lat=oce.attrs.get('original_maxlat'),\
                  original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
 dsmoor.attrs['mooring_longitude'] = np.float32(lon_moor0d)
