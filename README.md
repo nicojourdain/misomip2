@@ -50,7 +50,7 @@ import misomip2.preproc as mp
 To generate the standard MISOMIP2 [lon,lat,depth] grids, use one of these fucntions:
 
 ### misomip2.preproc.grid\_bounds\_oce(region='Amundsen'):
-> Gives minimum and maximum longitude and latitude for the common MISOMIP2 grid
+> Gives minimum and maximum longitude and latitude for the common MISOMIP2 ocean grid
 >
 >    region: 'Amundsen' (default), 'Weddell'
 >
@@ -60,7 +60,7 @@ _Exemple_:
 ```
 
 ### misomip2.preproc.generate\_3d\_grid\_oce(region='Amundsen'):
-> Generates (longitude, latitude, depth) of the common MISOMIP2 3d grid
+> Generates (longitude, latitude, depth) of the common MISOMIP2 3d ocean grid
 > 
 >    region: 'Amundsen' (default), 'Weddell'
 >
@@ -71,7 +71,7 @@ _Exemple_:
 <br/>
 
 ### misomip2.preproc.generate\_section\_grid\_oce(region='Amundsen'):
-> Generates (longitude, latitude, depth) of the common MISOMIP2 section
+> Generates (longitude, latitude, depth) of the common MISOMIP2 ocean section
 > 
 >    region: 'Amundsen' (default), 'Weddell'
 > 

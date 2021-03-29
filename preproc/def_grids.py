@@ -5,7 +5,7 @@ import sys
 
 #====================================================================================================
 def grid_bounds_oce(region='Amundsen'):
-   """ Gives minimum and maximum longitude and latitude for the common MISOMIP2 grid
+   """ Gives minimum and maximum longitude and latitude for the common MISOMIP2 ocean grid
 
        region: 'Amundsen' (default), 'Weddell'
 
@@ -28,7 +28,7 @@ def grid_bounds_oce(region='Amundsen'):
 
 #====================================================================================================
 def generate_3d_grid_oce(region='Amundsen'):
-   """Generates (longitude, latitude, depth) of the common MISOMIP2 3d grid
+   """Generates (longitude, latitude, depth) of the common MISOMIP2 3d ocean grid
 
       region: 'Amundsen' (default), 'Weddell'
 
@@ -52,7 +52,7 @@ def generate_3d_grid_oce(region='Amundsen'):
 
 #====================================================================================================
 def generate_section_grid_oce(region='Amundsen'):
-   """Generates (longitude, latitude, depth) of the common MISOMIP2 section
+   """Generates (longitude, latitude, depth) of the common MISOMIP2 ocean section
 
       region: 'Amundsen' (default), 'Weddell'
 
