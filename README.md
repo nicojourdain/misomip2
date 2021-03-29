@@ -7,7 +7,18 @@ This package is largely based on [xarray](http://xarray.pydata.org) and [scipy.i
 Nicolas C. Jourdain (IGE, CNRS-UGA, Grenoble, France)
 
 ### Install
-This may be moved to anaconda, but for now, here is the way to proceed:
+If you don't have a python environment yet, you can install anaconda following [this page](https://docs.anaconda.com/anaconda/install/).
+
+This package may become an anaconda package at some stage, but it is not the case yet, and for now, here is the way to proceed:
+
+If these modules are not installed (check with ```bash conda list```), install them:
+```bash
+conda install numpy xarray scipy
+conda install dask pyproj gsw
+```
+
+Then, to enable the import of misomip2 functions from anywhere, do:
+
 ```bash
 export MYPACK=/User/wmunk/MY_PACKAGES # to be adapted
 cd $MYPACK
@@ -19,7 +30,6 @@ cat << EOF >> ~/.bashrc # or .bash_profile or .profile or equivalent
 export PYTHONPATH="${MYPACK}:\$PYTHONPATH"
 EOF
 ```
-Then, the misomip2 fucntions can be imported from anywhere.
 
 <br/><br/>
 ----------
@@ -36,40 +46,50 @@ import misomip2.preproc as mp
 
 To generate the standard MISOMIP2 [lon,lat,depth] grids, use one of these fucntions:
 
-### misomip2.preproc.generate\_3d\_grid(region='Amundsen'):
+### misomip2.preproc.grid\_bounds\_oce(region='Amundsen'):
+> Gives minimum and maximum longitude and latitude for the common MISOMIP2 grid
+>
+>    region: 'Amundsen' (default), 'Weddell'
+>
+_Exemple_: 
+```bash
+[lonmin,lonmax,latmin,latmax] = grid_bounds_oce(region='Weddell')
+```
+
+### misomip2.preproc.generate\_3d\_grid\_oce(region='Amundsen'):
 > Generates (longitude, latitude, depth) of the common MISOMIP2 3d grid
 > 
 >    region: 'Amundsen' (default), 'Weddell'
 >
 _Exemple_: 
 ```bash 
-[lon,lat,depth]=mp.generate_3d_grid(region='Weddell')
+[lon,lat,depth]=mp.generate_3d_grid_oce(region='Weddell')
 ```
 <br/>
 
-### misomip2.preproc.generate\_section\_grid(region='Amundsen'):
+### misomip2.preproc.generate\_section\_grid\_oce(region='Amundsen'):
 > Generates (longitude, latitude, depth) of the common MISOMIP2 section
 > 
 >    region: 'Amundsen' (default), 'Weddell'
 > 
 _Exemple_: 
 ```bash
-[lon,lat,depth]=mp.generate_section_grid(region='Weddell')
+[lon,lat,depth]=mp.generate_section_grid_oce(region='Weddell')
 ```
 <br/>
 
-### misomip2.preproc.generate\_mooring\_grid(region='Amundsen'):
+### misomip2.preproc.generate\_mooring\_grid\_oce(region='Amundsen'):
 > Generates (longitude, latitude, depth) of the common MISOMIP2 mooring
 >
 >    region: 'Amundsen' (default), 'Weddell'
 > 
 _Exemple_:
 ```bash
-[lon,lat,depth]=mp.generate_mooring_grid(region='Weddell')
+[lon,lat,depth]=mp.generate_mooring_grid_oce(region='Weddell')
 ```
 <br/><br/>
 
-To put the MISOMIP2 standard attributes to the xarray dataset that will be saves as netcdf:
+To put the MISOMIP2 standard attributes to the xarray dataset that will be saved as netcdf:
 
 ### misomip2.preproc.add\_standard\_attributes(ds,miss=9.969209968386869e36):
 > Define standard netcdf attributes for variables that are already present in the ds xarray dataset.
@@ -92,12 +112,12 @@ To load model outputs, either use an existing function or create a similar one i
 > all variables required in MISOMIP2. It automatically detects
 > whether coordinates are stereographic or lon-lat.
 >
->    files\_in: file or list of files containing all the variables
+>    files\_in: file or list of files containing all the variables.
 >
->    rho0: reference volumic mass of seawater used in ocean model [kg m-3]
+>    rho0: reference volumic mass of seawater used in ocean model [kg m-3].
 >
->    teos10=False -> assumes the nemo outputs are in potential temperature & practical salinity (EOS80)<br/>
->          =True  -> assumes the nemo outputs are in CT and AS and convert to PT and PS
+>    teos10=False -> assumes the mitgcm outputs are in potential temperature & practical salinity (EOS80).<br/>
+>          =True  -> assumes the mitgcm outputs are in CT and AS and convert them to PT and PS.
 >
 _Example_:
 ```bash
@@ -109,19 +129,19 @@ ds = load_oce_mod_mitgcm(files_in=ff, rho0=1028.0, region='Weddell')
 
 ### misomip2.preproc.load\_oce\_mod\_nemo(file\_mesh\_mask='mesh\_mask.nc', file\_bathy='bathy\_meter.nc', files\_gridT='nemo\_grid\_T.nc', files\_gridU='nemo\_grid\_U.nc', files\_gridV='nemo\_grid\_V.nc', files\_SBC='nemo\_flxT.nc', files\_ice='nemo\_icemod.nc', files\_BSF='nemo\_psi.nc', rho0=1026.0, teos10=False, region='Amundsen' ):
 > Read NEMO outputs and define an xarray dataset containing 
-> all variables required in MISOMIP2
+> all variables required in MISOMIP2.
 >
 > Adapted to NEMO's C-grid and standard mesh/mask variables.
 >
 >    rho0 corresponds to rau0 value in NEMO's eosbn2.F90 i.e. reference volumic mass [kg m-3]
 >
->    teos10=False -> assumes the nemo outputs are in potential temperature & practical salinity (EOS80)<br/>
->          =True  -> assumes the nemo outputs are in CT and AS and convert to PT and PS
+>    teos10=False -> assumes the nemo outputs are in potential temperature & practical salinity (EOS80).<br/>
+>          =True  -> assumes the nemo outputs are in CT and AS and convert them to PT and PS.
 >
->    region = 'Amundsen' (default) or 'Weddell'
+>    region = 'Amundsen' (default) or 'Weddell'.
 >
 >    NB: files\_BSF contains the barotropic streamfunction calculated at U-points, e.g. using
->        the cdfpsi function which is part of the [CDFTOOLS](https://github.com/meom-group/CDFTOOLS)
+>        the cdfpsi function which is part of the [CDFTOOLS](https://github.com/meom-group/CDFTOOLS).
 >
 _Example_:
 ```bash
@@ -172,7 +192,7 @@ VAR_miso = mp.horizontal_interp( ds.lonT, ds.latT, mlat, mlon, lon_miso1d, lat_m
 ```
 <br/>
 
-### misomip2.preproc.horizontal\_interp_nonan( lon\_in\_1d, lat\_in\_1d, mlat\_misomip, mlon\_misomip, lon\_out\_1d, lat\_out\_1d, var\_in\_1d ):
+### misomip2.preproc.horizontal\_interp\_nonan( lon\_in\_1d, lat\_in\_1d, mlat\_misomip, mlon\_misomip, lon\_out\_1d, lat\_out\_1d, var\_in\_1d ):
 > Interpolates one-dimension data horizontally to a 2d numpy array reshaped to the misomip standard (lon,lat) format.
 >
 >    Method: triangular linear barycentryc interpolation, NOT USING NANs (i.e. find triangle with non-nan values)
@@ -196,7 +216,7 @@ VAR_miso = mp.horizontal_interp_nonan( ds.lonT, ds.latT, mlat, mlon, lon_miso1d,
 ----------
 
 # Multi-model Analysis 
-Contains scripts to quickly plot multi-model diagnostics. TO BE COMPLETED.
+Contains scripts to quickly plot multi-model diagnostics. **TO BE COMPLETED**.
 
 To use the analysis tools, start by specifying:
 ```bash
@@ -208,5 +228,7 @@ import misomip2.analysis as ma
 ----------
 # Examples
 
+People who use the misomip2 package to interpolate their model results to the MISOMIP2 grids are invited to provide their scripts.
+
 ### interpolate\_to\_common\_grid.py
-This script has been used to interpolate NEMO and MITgcm outputs to the 3 misomip2 grids (3d grid, section, mooring). To use it, you need to adapt at least section 0 (General information), section 1 (Files and variables) and section 2 (Global attributes of output netcdf). For section1, ou may need to create or modify a load\_oce\_mod\_xxxx function similar to the one existing for NEMO and MITgcm if your model is not covered yet.
+> This script has been used to interpolate NEMO and MITgcm outputs to the 3 misomip2 grids (3d grid, section, mooring). To use it, you need to adapt at least section 0 (General information), section 1 (Files and variables) and section 2 (Global attributes of output netcdf). For section1, ou may need to create or modify a load\_oce\_mod\_xxxx function similar to the one existing for NEMO and MITgcm if your model is not covered yet.

@@ -4,12 +4,12 @@ import numpy as np
 import sys
 
 #====================================================================================================
-def grid_bounds(region='Amundsen'):
+def grid_bounds_oce(region='Amundsen'):
    """ Gives minimum and maximum longitude and latitude for the common MISOMIP2 grid
 
        region: 'Amundsen' (default), 'Weddell'
 
-       exemple: [lonmin,lonmax,latmin,latmax] = grid_bounds(region='Amundsen')
+       exemple: [lonmin,lonmax,latmin,latmax] = grid_bounds_oce(region='Amundsen')
    """
    if ( region == 'Amundsen' ):
      longitude_min = -140.0
@@ -27,15 +27,15 @@ def grid_bounds(region='Amundsen'):
    return [longitude_min,longitude_max,latitude_min,latitude_max]
 
 #====================================================================================================
-def generate_3d_grid(region='Amundsen'):
+def generate_3d_grid_oce(region='Amundsen'):
    """Generates (longitude, latitude, depth) of the common MISOMIP2 3d grid
 
       region: 'Amundsen' (default), 'Weddell'
 
-      exemple: [lon,lat,depth]=generate_3d_grid(region='Amundsen')
+      exemple: [lon,lat,depth]=generate_3d_grid_oce(region='Amundsen')
    """
 
-   [lonmin,lonmax,latmin,latmax] = grid_bounds(region=region)
+   [lonmin,lonmax,latmin,latmax] = grid_bounds_oce(region=region)
 
    if ( region == 'Amundsen' ):
      longitude=np.arange(lonmin,lonmax+0.1,0.1)
@@ -51,12 +51,12 @@ def generate_3d_grid(region='Amundsen'):
    return [longitude,latitude,depth]
 
 #====================================================================================================
-def generate_section_grid(region='Amundsen'):
+def generate_section_grid_oce(region='Amundsen'):
    """Generates (longitude, latitude, depth) of the common MISOMIP2 section
 
       region: 'Amundsen' (default), 'Weddell'
 
-      exemple: [lon,lat,depth]=generate_section_grid(region='Amundsen')
+      exemple: [lon,lat,depth]=generate_section_grid_oce(region='Amundsen')
    """
 
    if ( region == 'Amundsen' ):
@@ -101,12 +101,12 @@ def generate_section_grid(region='Amundsen'):
    return [longitude,latitude,depth]
 
 #====================================================================================================
-def generate_mooring_grid(region='Amundsen'):
+def generate_mooring_grid_oce(region='Amundsen'):
    """Generates (longitude, latitude, depth) of the common MISOMIP2 mooring
 
       region: 'Amundsen' (default), 'Weddell'
 
-      exemple: [lon,lat,depth]=generate_mooring_grid(region='Amundsen')
+      exemple: [lon,lat,depth]=generate_mooring_grid_oce(region='Amundsen')
    """
 
    if ( region == 'Amundsen' ):

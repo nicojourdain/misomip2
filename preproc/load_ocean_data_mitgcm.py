@@ -5,7 +5,7 @@ import numpy as np
 import xarray as xr
 import gsw
 from pyproj import Proj
-from .def_grids import grid_bounds
+from .def_grids import grid_bounds_oce
 
 #====================================================================================
 def load_oce_mod_mitgcm(files_in='MITgcm_output.nc',\
@@ -335,7 +335,7 @@ def load_oce_mod_mitgcm(files_in='MITgcm_output.nc',\
    #----------
    # Reduce the size of ocean dataset
  
-   [lonmin,lonmax,latmin,latmax] = grid_bounds(region=region)
+   [lonmin,lonmax,latmin,latmax] = grid_bounds_oce(region=region)
    lonmin=lonmin-1.1 # take a bit more for interpolation
    lonmax=lonmax+1.1
    latmin=latmin-1.1

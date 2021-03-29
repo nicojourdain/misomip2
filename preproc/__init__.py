@@ -1,9 +1,9 @@
 
 # to enable direct call to functions:
-from .def_grids import grid_bounds
-from .def_grids import generate_3d_grid
-from .def_grids import generate_section_grid
-from .def_grids import generate_mooring_grid
+from .def_grids import grid_bounds_oce
+from .def_grids import generate_3d_grid_oce
+from .def_grids import generate_section_grid_oce
+from .def_grids import generate_mooring_grid_oce
 
 from .def_attrs import add_standard_attributes
 

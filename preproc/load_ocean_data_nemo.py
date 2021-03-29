@@ -4,7 +4,7 @@
 import numpy as np
 import xarray as xr
 import gsw
-from .def_grids import grid_bounds
+from .def_grids import grid_bounds_oce
 from .def_attrs import rename_dimensions
 
 #====================================================================================
@@ -351,7 +351,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    #----------
    # Reduce the size of ocean dataset
  
-   [lonmin,lonmax,latmin,latmax] = grid_bounds(region=region)
+   [lonmin,lonmax,latmin,latmax] = grid_bounds_oce(region=region)
    lonmin=lonmin-1.1 # take a bit more for interpolation
    lonmax=lonmax+1.1
    latmin=latmin-1.1
