@@ -113,12 +113,24 @@ mp.add_standard_attributes_oce(dsmiso,miss=1.e20)
 
 To load model outputs, either use an existing function or create a similar one if your model is not covered yet:
 
-### misomip2.preproc.load\_oce\_mod\_mitgcm(files\_in='MITgcm\_output.nc', rho0=1026.0, teos10=False, region='Amundsen' ):
+### misomip2.preproc.load\_oce\_mod\_mitgcm(files\_T='MITgcm\_output.nc', files\_S=files\_T, files\_U=files\_T, files\_V=files\_T, files\_I=files\_T, files\_SRF=files\_T, files\_M=files\_T, rho0=1026.0, teos10=False, region='Amundsen' ):
 > Read MITgcm outputs and define an xarray dataset containing 
 > all variables required in MISOMIP2. It automatically detects
 > whether coordinates are stereographic or lon-lat.
 >
->    files\_in: file or list of files containing all the variables.
+>    files\_T: file or list of files containing the temperature and related variables [default='MITgcm\_all.nc']
+>
+>    files\_S: file or list of files containing the salinity variable [default=files\_T]
+>
+>    files\_U: file or list of files containing the x-velocity and related variables [default=files\_T]
+>
+>    files\_V: file or list of files containing the y-velocity and related variables [default=files\_T]
+>
+>    files\_I: file or list of files containing the sea-ice variables [default=files\_T]
+>
+>    files\_SRF: file or list of files containing the surface fluxes variables [default=files\_T]
+>
+>    files\_M: file or list of files containing grid/mesh variables [default=files\_T]
 >
 >    rho0: reference volumic mass of seawater used in ocean model [kg m-3].
 >
@@ -129,7 +141,7 @@ _Example_:
 ```bash
 dir= 'datadir/model/'
 ff = [ dir+'MITgcm_y2009.nc', dir+'MITgcm_y2010.nc', dir+'MITgcm_y2011.nc' ]
-ds = load_oce_mod_mitgcm(files_in=ff, rho0=1028.0, region='Weddell')
+ds = load_oce_mod_mitgcm(files_T=ff, rho0=1028.0, region='Weddell')
 ```
 <br/>
 
