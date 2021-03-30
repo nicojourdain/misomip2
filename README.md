@@ -17,7 +17,11 @@ This package may become an anaconda package at some stage, but it is not the cas
 If these modules are not installed (check with ```conda list```), install them:
 ```bash
 conda install numpy xarray scipy
-conda install dask pyproj gsw
+conda install dask pyproj
+conda install -c conda-forge gsw 
+# or conda install -c conda-forge/label/gcc7 gsw 
+# or conda install -c conda-forge/label/cf201901 gsw 
+# or conda install -c conda-forge/label/cf202003 gsw
 ```
 
 Then, to clone the misomip2 package and enable the import of misomip2 functions from anywhere, do:
