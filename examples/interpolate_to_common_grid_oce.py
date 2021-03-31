@@ -84,6 +84,8 @@ def put_global_attrs(ds,experiment='TBD',avg_hor_res_73S=0.0,original_sim_name='
    ds.attrs['contact'] = 'Nicolas Jourdain <nicolas.jourdain@univ-grenoble-alpes.fr>' # name <email>
    ds.attrs['institute'] = 'CNRS-UGA-IGE'
    ds.attrs['computing_facility'] = 'occigen-CINES'                    # Computing center where the simulation was run
+   ds.attrs['interpolation_method'] = 'linear triangular barycentric'  # in: 'linear triangular barycentric', 'bi-linear',
+                                                                       #     'nearest-neighbor', 'conservative', ...       
    ds.attrs['ocean_model'] = 'NEMO3.6'                                 # Model name and version
    ds.attrs['reference'] = 'Jourdain et al. 2019 (doi:10.1016/j.ocemod.2018.11.001)'  # publication describing the simulation or a similar configuration
    ds.attrs['original_sim_name'] = original_sim_name                   # original simulation name
