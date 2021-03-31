@@ -70,6 +70,11 @@ You can copy interpolate_to_common_grid_oce.py and adapt it to your model. You n
 <br/><br/>
 ----------
 ----------
+**Below are described the misomip2 functions used either for pre-processing model outputs or for analysing multpile models on common grids**
+
+<br/><br/>
+----------
+----------
 
 # Preprocessing
 Contains scripts that facilitate interpolation and formatting to the MISOMIP2 standards.
