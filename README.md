@@ -40,6 +40,32 @@ EOF
 
 You can update the cloned directory anytime with ```git pull``` executed in that directory. 
 
+<br/><br/>
+----------
+----------
+
+# Examples
+
+We provide a test case so that users can check that this package works well in their python environment before adapting it to their model outputs. People who use the misomip2 package to interpolate their model results to the MISOMIP2 grids are invited to provide their scripts, in particular if their model is not covered yet.
+
+### Ocean test cases 
+
+We provide 2 months of raw outputs from NEMO and MITGCM (Amundsen Sea configurations) in ```misomip2/examples/models/oce/```. To interpolate these model outputs to the standard MISOMIP2 grids, edit **interpolate_to_common_grid_oce.py** and select ```model='MITGCM_test'``` (you can try ```model='NEMO_test'``` just after). Execute it as:
+```bash
+python interpolate_to_common_grid_oce.py
+```
+This should create the following files:
+* Oce3d\_MITGCM_test\_A1.nc
+* OceMoor\_MITGCM\_test_A1.nc
+* OceSec\_MITGCM\_test\_A1.nc
+
+### Adapt to your own ocean configuration
+
+You can copy interpolate_to_common_grid_oce.py and adapt it to your model. You need to adapt at least section 0 (General information), section 1 (Files and variables) and section 2 (Global attributes of output netcdf). For section1, ou may need to create or modify a load\_oce\_mod\_xxxx.py function similar to the one existing for NEMO and MITgcm if your model is not covered yet. If your model is already covered but variable names differ from what is understood by load\_oce\_mod\_xxxx.py, just add options for these variables in load\_oce\_mod\_xxxx.py and [make a pull request](https://opensource.com/article/19/7/create-pull-request-github) to upload it onto the official misomip2 repository (so that you keep this in case of updates).
+ 
+### Ice test cases
+
+**To be completed**
 
 <br/><br/>
 ----------
@@ -244,13 +270,4 @@ To use the analysis tools, start by specifying:
 ```bash
 import misomip2.analysis as ma
 ```
-<br/><br/>
 
-----------
-----------
-# Examples
-
-People who use the misomip2 package to interpolate their model results to the MISOMIP2 grids are invited to provide their scripts.
-
-### interpolate\_to\_common\_grid\_oce.py
-> This script has been used to interpolate NEMO and MITgcm outputs to the 3 misomip2 grids (3d grid, section, mooring). To use it, you need to adapt at least section 0 (General information), section 1 (Files and variables) and section 2 (Global attributes of output netcdf). For section1, ou may need to create or modify a load\_oce\_mod\_xxxx function similar to the one existing for NEMO and MITgcm if your model is not covered yet.
