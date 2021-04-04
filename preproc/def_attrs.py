@@ -256,6 +256,30 @@ def add_standard_attributes_oce(ds,miss=9.969209968386869e36):
      ds.sftfli.attrs['standard_name'] = 'ice_shelf_fraction'
      ds.sftfli.attrs['cell_method'] = 'area: cell average'
 
+  if ( "dydrfli" in ds.data_vars ):
+     print('define attributes for variable dydrfli')
+     ds.dydrfli.attrs['_FillValue'] = miss
+     ds.dydrfli.attrs['units'] = 'm s-1'
+     ds.dydrfli.attrs['long_name'] = 'Dynamical Driving of Basal Ice Shelf Melt'
+     ds.dydrfli.attrs['standard_name'] = 'ice_shelf_dynamical_driving'
+     ds.dydrfli.attrs['cell_method'] = 'area: mean where floating ice' 
+
+  if ( "thdrfli" in ds.data_vars ):
+     print('define attributes for variable thdrfli')
+     ds.thdrfli.attrs['_FillValue'] = miss
+     ds.thdrfli.attrs['units'] = 'degC'
+     ds.thdrfli.attrs['long_name'] = 'Thermal Driving of Basal Ice Shelf Melt'
+     ds.thdrfli.attrs['standard_name'] = 'ice_shelf_thermal_driving'
+     ds.thdrfli.attrs['cell_method'] = 'area: mean where floating ice'
+
+  if ( "hadrfli" in ds.data_vars ):
+     print('define attributes for variable hadrfli')
+     ds.hadrfli.attrs['_FillValue'] = miss
+     ds.hadrfli.attrs['units'] = '0.001'
+     ds.hadrfli.attrs['long_name'] = 'Haline Driving of Basal Ice Shelf Melt'
+     ds.hadrfli.attrs['standard_name'] = 'ice_shelf_haline_driving'
+     ds.hadrfli.attrs['cell_method'] = 'area: mean where floating ice'
+
 #====================================================================================================
 def rename_dimensions(ds):
    """ rename dimensions of xarray dataset ds to standard (x,y,z,time) if needed
