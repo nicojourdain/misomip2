@@ -22,8 +22,8 @@ np.seterr(divide='ignore', invalid='ignore') # to avoid warning due to divide by
 # 0- General information:
 
 # Official name in MISOMIP2:
-#model='NEMO_test'
-model='MITGCM_test'
+model='NEMO_test'
+#model='MITGCM_test'
 
 reg='Amundsen' # 'Amundsen' or 'Weddell'
 
@@ -136,24 +136,31 @@ res_73S = 0.5 * (  oce.dxT.where(  (latT < -72.5) & (latT >= -73.5) & (lonT >= l
 print('Average horizontal resolution at 73S :',res_73S)
 
 # Useful masks with nans
-maskTnan = oce.maskT.where( (oce.maskT==1) ) # 3d mask (=1 if ocean, =nan elsewhere)
-maskUnan = oce.maskU.where( (oce.maskU==1) )
-maskVnan = oce.maskV.where( (oce.maskV==1) )
-maskTnan2d = oce.maskT.max(dim='z').where( oce.maskT.max(dim='z')==1 ) # 2d mask (=1 for open ocean and cavities, =nan elsewhere)
-maskUnan2d = oce.maskU.max(dim='z').where( oce.maskU.max(dim='z')==1 )
-maskVnan2d = oce.maskV.max(dim='z').where( oce.maskU.max(dim='z')==1 )
+maskT2d=oce.maskT.max('z')
+maskU2d=oce.maskU.max('z')
+maskV2d=oce.maskV.max('z')
+
+#maskTnan = oce.maskT.where( (oce.maskT==1) ) # 3d mask (=1 if ocean, =nan elsewhere)
+#maskUnan = oce.maskU.where( (oce.maskU==1) )
+#maskVnan = oce.maskV.where( (oce.maskV==1) )
+#maskTnan2d = maskTnan.max('z',skipna=True) # 2d mask (=1 for open ocean and cavities, =nan elsewhere)
+#maskUnan2d = maskUnan.max('z',skipna=True) # 2d mask (=1 for open ocean and cavities, =nan elsewhere)
+#maskVnan2d = maskVnan.max('z',skipna=True) # 2d mask (=1 for open ocean and cavities, =nan elsewhere)
+##maskTnan2d = oce.maskT.max(dim='z').where( oce.maskT.max(dim='z')==1 ) # 2d mask (=1 for open ocean and cavities, =nan elsewhere)
+##maskUnan2d = oce.maskU.max(dim='z').where( oce.maskU.max(dim='z')==1 )
+##maskVnan2d = oce.maskV.max(dim='z').where( oce.maskU.max(dim='z')==1 )
 
 # Lower and upper indices for vertical interpolation:
 [kinf,ksup] = mp.vertical_interp(oce.depTUV.values,dep_miso)
 
 mtime = np.shape(oce.SO)[0]
 
-# mask showing the original domain (nan where interpolation of any of T, U, V grid is nan):
+# mask showing the original domain on the MISOMIP grid (=nan where interpolation of any of T, U, V grid is nan, =1 elsewhere):
 DOMMSK_miso =               mp.horizontal_interp( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.DOMMSKT )
 DOMMSK_miso = DOMMSK_miso + mp.horizontal_interp( lonU, latU, mlat, mlon, lon_miso1d, lat_miso1d, oce.DOMMSKU )
 DOMMSK_miso = DOMMSK_miso + mp.horizontal_interp( lonV, latV, mlat, mlon, lon_miso1d, lat_miso1d, oce.DOMMSKV )
 
-# vertical then horizontal interpolation of constant 3d fields to common grid :
+# Sea area fraction at each vertical level on the MISOMIP grid: 
 LEVOF_miso = np.zeros((mdep,mlat,mlon)) + missval
 for kk in np.arange(mdep):
   if ( kinf[kk] == ksup[kk] ):
@@ -168,22 +175,22 @@ for kk in np.arange(mdep):
   tzz[ np.isnan(DOMMSK_miso) ] = missval
   LEVOF_miso[kk,:,:] = tzz
 
-# horizontal interpolation of constant 2d fields to common horizontal grid :
+# horizontal interpolation grid roation angles :
 theT = mp.horizontal_interp( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.thetaT )
 theU = mp.horizontal_interp( lonU, latU, mlat, mlon, lon_miso1d, lat_miso1d, oce.thetaU )
 theV = mp.horizontal_interp( lonV, latV, mlat, mlon, lon_miso1d, lat_miso1d, oce.thetaV )
 
-# Ice shelf fraction
+# Ice shelf fraction on MISOMIP grid (in [0-100], =nan beyond model domain)
 SFTFLI_miso = mp.horizontal_interp( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.SFTFLI )
 SFTFLI_miso[ np.isnan(DOMMSK_miso) ] = missval
 
-# Depth of floating ice (ice-shelf draft)
+# Depth of floating ice on MISOMIP grid (ice-shelf draft) (=0 where no ice shelf, =nan beyond model domain)
 DEPFLI = oce.DEPFLI.where( (oce.SFTFLI.values > 1.), np.nan ) # to avoid interpolation with 0 depth beyond the grounding line
 DEPFLI_miso = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, DEPFLI )
 DEPFLI_miso[ (SFTFLI_miso < 1.) | np.isnan(DEPFLI_miso) ] = 0.e0
 DEPFLI_miso[ np.isnan(DOMMSK_miso) ] = missval
 
-# Ocean depth
+# Ocean depth on MISOMIP grid (=0 where land or grounded ice, =nan beyond model domain)
 DEPTHO = oce.DEPTHO.where( (oce.SFTFLI.values > 1.) | (oce.LEVOF[0,:].values > 1.), np.nan )
 DEPTHO_miso = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, DEPTHO )
 DEPTHO_miso[ ((SFTFLI_miso < 1.) & (LEVOF_miso[0,:,:] < 1.)) | np.isnan(DEPTHO_miso) ] = 0.e0
@@ -199,6 +206,9 @@ ZOS_miso    = np.zeros((mtime,mlat,mlon)) + missval
 TOB_miso    = np.zeros((mtime,mlat,mlon)) + missval
 SOB_miso    = np.zeros((mtime,mlat,mlon)) + missval
 FICESHELF_miso = np.zeros((mtime,mlat,mlon)) + missval
+DYDRFLI_miso = np.zeros((mtime,mlat,mlon)) + missval
+THDRFLI_miso = np.zeros((mtime,mlat,mlon)) + missval
+HADRFLI_miso = np.zeros((mtime,mlat,mlon)) + missval
 MSFTBAROT_miso = np.zeros((mtime,mlat,mlon)) + missval
 HFDS_miso = np.zeros((mtime,mlat,mlon)) + missval
 WFOATRLI_miso = np.zeros((mtime,mlat,mlon)) + missval
@@ -210,7 +220,8 @@ SIV_miso = np.zeros((mtime,mlat,mlon)) + missval
 TAUUO_miso = np.zeros((mtime,mlat,mlon)) + missval
 TAUVO_miso = np.zeros((mtime,mlat,mlon)) + missval
 
-LEVOF_maxdep = np.amax(LEVOF_miso,axis=0)
+# maximum sea fraction along the z axis:
+LEVOF_zmax = np.amax(LEVOF_miso,axis=0)
 
 # masking with nan to not consider points in interpolation 
 # (instead of defining a mask for the bottom layer):
@@ -219,35 +230,61 @@ SOB=oce.SOB.where( (~np.isnan(TOB.values)) )
 
 for ll in np.arange(mtime):
 
-  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.ZOS.isel(time=ll)*maskTnan.isel(z=0) )
-  tzz[ (LEVOF_maxdep < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; ZOS_miso[ll,:,:] = tzz
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.ZOS.isel(time=ll)*maskTnan2d )
+  tzz[ (LEVOF_zmax < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+  ZOS_miso[ll,:,:] = tzz
 
   tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, TOB.isel(time=ll) )
-  tzz[ (LEVOF_maxdep < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; TOB_miso[ll,:,:] = tzz
+  tzz[ (LEVOF_zmax < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+  TOB_miso[ll,:,:] = tzz
 
   tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, SOB.isel(time=ll) )
-  tzz[ (LEVOF_maxdep < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; SOB_miso[ll,:,:] = tzz
+  tzz[ (LEVOF_zmax < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+  SOB_miso[ll,:,:] = tzz
 
-  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.FICESHELF.isel(time=ll)*maskTnan.max('z',skipna=True) )
-  tzz[ (SFTFLI_miso < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; FICESHELF_miso[ll,:,:] = tzz
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.FICESHELF.isel(time=ll)*oce.SFTFLI )
+  tzz = tzz / SFTFLI_miso[:,:]
+  tzz[ (SFTFLI_miso < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+  FICESHELF_miso[ll,:,:] = tzz
 
-  tzz = mp.horizontal_interp_nonan( lonU, latU, mlat, mlon, lon_miso1d, lat_miso1d, oce.MSFTBAROT.isel(time=ll)*maskUnan.isel(z=0) )
-  tzz[ (LEVOF_maxdep < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; MSFTBAROT_miso[ll,:,:] = tzz
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.DYDRFLI.isel(time=ll)*oce.SFTFLI )
+  tzz = tzz / SFTFLI_miso[:,:]
+  tzz[ (SFTFLI_miso < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+  DYDRFLI_miso[ll,:,:] = tzz
 
-  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.HFDS.isel(time=ll)*maskTnan.isel(z=0) )
-  tzz[ (LEVOF_maxdep < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; HFDS_miso[ll,:,:] = tzz
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.THDRFLI.isel(time=ll)*oce.SFTFLI )
+  tzz = tzz / SFTFLI_miso[:,:]
+  tzz[ (SFTFLI_miso < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+  THDRFLI_miso[ll,:,:] = tzz
 
-  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.WFOATRLI.isel(time=ll)*maskTnan.isel(z=0) )
-  tzz[ (LEVOF_maxdep < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; WFOATRLI_miso[ll,:,:] = tzz
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.HADRFLI.isel(time=ll)*oce.SFTFLI )
+  tzz = tzz / SFTFLI_miso[:,:]
+  tzz[ (SFTFLI_miso < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+  HADRFLI_miso[ll,:,:] = tzz
+
+  tzz = mp.horizontal_interp_nonan( lonU, latU, mlat, mlon, lon_miso1d, lat_miso1d, oce.MSFTBAROT.isel(time=ll)*maskUnan2d )
+  tzz[ (LEVOF_zmax < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+  MSFTBAROT_miso[ll,:,:] = tzz
+
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.HFDS.isel(time=ll)*maskTnan2d )
+  tzz[ (LEVOF_zmax < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+  HFDS_miso[ll,:,:] = tzz
+
+  tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.WFOATRLI.isel(time=ll)*maskTnan2d )
+  tzz[ (LEVOF_zmax < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+  WFOATRLI_miso[ll,:,:] = tzz
 
   tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.WFOSICOR.isel(time=ll)*maskTnan.isel(z=0) )
-  tzz[ (LEVOF_miso[0,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; WFOSICOR_miso[ll,:,:] = tzz
+  tzz[ (LEVOF_miso[0,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+  WFOSICOR_miso[ll,:,:] = tzz
 
   tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.SICONC.isel(time=ll)*maskTnan.isel(z=0) )
-  tzz[ (LEVOF_miso[0,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; SICONC_miso[ll,:,:] = tzz
+  tzz[ (LEVOF_miso[0,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+  SICONC_miso[ll,:,:] = tzz
 
   tzz = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.SIVOL.isel(time=ll)*maskTnan.isel(z=0) )
-  tzz[ (LEVOF_miso[0,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval ; SIVOL_miso[ll,:,:] = tzz
+  tzz[ (LEVOF_miso[0,:,:] < 1.) | (np.isnan(DOMMSK_miso)) ] = missval
+  SIVOL_miso[ll,:,:] = tzz
 
   # sea-ice velocities: rotation and interpolation weighted by sea-ice concentration
   SIUX_notrot = mp.horizontal_interp_nonan( lonT, latT, mlat, mlon, lon_miso1d, lat_miso1d, oce.SIUX.isel(time=ll)*oce.SICONC.isel(time=ll) )
@@ -334,6 +371,9 @@ dsmiso3d = xr.Dataset(
     "tob":       (["time", "latitude", "longitude"], np.float32(TOB_miso)),
     "sob":       (["time", "latitude", "longitude"], np.float32(SOB_miso)),
     "ficeshelf": (["time", "latitude", "longitude"], np.float32(FICESHELF_miso)),
+    "dydrfli":   (["time", "latitude", "longitude"], np.float32(DYDRFLI_miso)),
+    "thdrfli":   (["time", "latitude", "longitude"], np.float32(THDRFLI_miso)),
+    "hadrfli":   (["time", "latitude", "longitude"], np.float32(HADRFLI_miso)),
     "msftbarot": (["time", "latitude", "longitude"], np.float32(MSFTBAROT_miso)),
     "hfds":      (["time", "latitude", "longitude"], np.float32(HFDS_miso)),
     "wfoatrli":  (["time", "latitude", "longitude"], np.float32(WFOATRLI_miso)),
