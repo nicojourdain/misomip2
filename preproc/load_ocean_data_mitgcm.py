@@ -129,7 +129,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    
    [mz, my, mx] = maskT.shape
 
-   # Domain mask (ones with a halo of nans), used not to interpolate beyond:
+   # Domain mask (ones with a halo of nans), used not to interpolate beyond the original domain:
    halonan = np.ones((my,mx))
    halonan[0,:] = np.nan ; halonan[-1,:] = np.nan
    halonan[:,0] = np.nan ; halonan[:,-1] = np.nan
@@ -305,6 +305,33 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    else:
      print('@@@@@ WARNING @@@@@   No data found for FICESHELF  -->  filled with NaNs')
      FICESHELF = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
+
+   # ice shelf dynamical driving (heat exchange velocity) [m s-1]:
+   if ( "isfgammat" in ncT.data_vars ):
+     DYDRFLI = ncT.isfgammat
+   elif ( "sogammat_cav" in ncT.data_vars ):
+     DYDRFLI = ncT.sogammat_cav
+   else:
+     print('@@@@@ WARNING @@@@@   No data found for DYDRFLI  -->  filled with NaNs')
+     DYDRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
+
+   # ice shelf thermal driving [degC]:
+   if ( "isfthermdr" in ncT.data_vars ):
+     THDRFLI = ncT.isfthermdr
+   elif ( "thermald_cav" in ncT.data_vars ):
+     THDRFLI = ncT.thermald_cav
+   else:
+     print('@@@@@ WARNING @@@@@   No data found for THDRFLI  -->  filled with NaNs')
+     THDRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
+
+   # ice shelf haline driving [0.001]:
+   if ( "isfhalindr" in ncT.data_vars ):
+     HADRFLI = ncT.isfhalindr
+   elif ( "halined_cav" in ncT.data_vars ):
+     HADRFLI = ncT.halined_cav
+   else:
+     print('@@@@@ WARNING @@@@@   No data found for HADRFLI  -->  filled with NaNs')
+     HADRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # sea-ice concentration [0-100]
    if ( "siconc" in ncI.data_vars ):

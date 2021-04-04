@@ -67,7 +67,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
 
    [mz, my, mx] = maskT.shape
 
-   # Domain mask (ones with a halo of nans), used not to interpolate beyond:
+   # Domain mask (ones with a halo of nans), used not to interpolate beyond the original domain:
    halonan = np.ones((my,mx))
    halonan[0,:] = np.nan ; halonan[-1,:] = np.nan
    halonan[:,0] = np.nan ; halonan[:,-1] = np.nan
@@ -271,6 +271,33 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
      print('@@@@@ WARNING @@@@@   No data found for FICESHELF  -->  filled with NaNs')
      FICESHELF = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
+   # ice shelf dynamical driving (heat exchange velocity) [m s-1]:
+   if ( "isfgammat" in ncS.data_vars ):
+     DYDRFLI = ncS.isfgammat
+   elif ( "sogammat_cav" in ncS.data_vars ):
+     DYDRFLI = ncS.sogammat_cav
+   else:
+     print('@@@@@ WARNING @@@@@   No data found for DYDRFLI  -->  filled with NaNs')
+     DYDRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] ) 
+
+   # ice shelf thermal driving [degC]:
+   if ( "isfthermdr" in ncS.data_vars ):
+     THDRFLI = ncS.isfthermdr
+   elif ( "thermald_cav" in ncS.data_vars ):
+     THDRFLI = ncS.thermald_cav
+   else:
+     print('@@@@@ WARNING @@@@@   No data found for THDRFLI  -->  filled with NaNs')
+     THDRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
+
+   # ice shelf haline driving [0.001]:
+   if ( "isfhalindr" in ncS.data_vars ):
+     HADRFLI = ncS.isfhalindr
+   elif ( "halined_cav" in ncS.data_vars ):
+     HADRFLI = ncS.halined_cav
+   else:
+     print('@@@@@ WARNING @@@@@   No data found for HADRFLI  -->  filled with NaNs')
+     HADRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
+
    # sea-ice concentration [0-100]
    if ( "siconc" in ncI.data_vars ):
      SICONC = ncI.siconc*100.0
@@ -308,31 +335,22 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
 
    # Total heat flux received by the ocean surface (including ice-shelf/ocean interface) [W m-2] 
    # see Griffies et al. (2016, section K4-K5) NB: here, including correction if any unlike Griffies (to avoid 2 variables)
-   if ( "qt_oce" in ncS.data_vars ):
-     HFDS = ncS.qt_oce
-   elif ( "sohefldo" in ncS.data_vars ):
-     HFDS = ncS.sohefldo
-   if ( "qisf" in ncS.data_vars ):
-     HFDS = HFDS + ncS.qisf # not included in qt_oce in tested NEMO versions
-   elif ( "qoceisf_cav" in ncS.data_vars ):
-     HFDS = HFDS + ncS.qoceisf_cav # not included in sohefldo in tested NEMO versions
+   if ( ("qt_oce" in ncS.data_vars) & ("qisf" in ncS.data_vars) ):
+     HFDS = ncS.qt_oce + ncS.qisf # ice-shelf heat flux not included in qt_oce in tested NEMO versions
+   elif ( ("sohefldo" in ncS.data_vars) & ("qoceisf_cav" in ncS.data_vars) ):
+     HFDS = ncS.sohefldo + ncS.qoceisf_cav # not included in sohefldo in tested NEMO versions
+   else:
+     print('@@@@@ WARNING @@@@@   No data found for HFDS  -->  filled with NaNs')
+     HFDS = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # Water flux entering the ocean due to sea-ice (melting-freezing) and surface correction (SSS restoring)
    # (= fsitherm + wfocorr in Griffies 2016 section K2) [kg m-2 s-1]
-   if ( "erp" in ncS.data_vars ):
-     ERP = ncS.erp.where( (~np.isnan(ncS.erp.values)), 0.e0 ) # surface correction (SSS restoring)
-   elif ( "sowafld" in ncS.data_vars ):
-     ERP = ncS.sowafld.where( (~np.isnan(ncS.sowafld.values)), 0.e0 ) # surface correction (SSS restoring)
-   else:
-     print('@@@@@ WARNING @@@@@   No data found for ERP  -->  filled with NaNs')
-     ERP = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
-
-   if ( "saltflx" in ncS.data_vars ): # NB: saltflx unit attribute is wrong in nico's output, it is actually in [1e-3 kg m-2 s-1]
-     WFOSICOR = - ERP - ncS.saltflx / SS.isel(z=0)
-   elif ( "sosfldow" in ncS.data_vars ):
-     WFOSICOR = - ncS.sosfldow / SS.isel(z=0) # includes surface correction (ERP) in Pierre's version
-   elif ( "sfx" in ncI.data_vars ):
-     WFOSICOR = - ERP - ncI.sfx/86400.0 / SS.isel(z=0)
+   if ( ("erp" in ncS.data_vars) & ("saltflx" in ncS.data_vars) ):
+     WFOSICOR = ncS.erp.where( (~np.isnan(ncS.erp.values)), 0.e0 ) - ncS.saltflx / SS.isel(z=0) # NB: saltflx unit attribute is wrong in nico's output, it is actually in [1e-3 kg m-2 s-1]
+   elif ( ("erp" in ncS.data_vars) & ("sfx" in ncI.data_vars) ):
+     WFOSICOR = ncS.erp.where( (~np.isnan(ncS.erp.values)), 0.e0 ) - ncI.sfx/86400.0 / SS.isel(z=0)
+   elif ( ("sowafld" in ncS.data_vars) & ("sosfldow" in ncS.data_vars) ):
+     WFOSICOR = ncS.sowafld.where( (~np.isnan(ncS.sowafld.values)), 0.e0 ) - ncS.sosfldow / SS.isel(z=0)
    else:
      print('@@@@@ WARNING @@@@@   No data found for WFOSICOR  -->  filled with NaNs')
      WFOSICOR = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
