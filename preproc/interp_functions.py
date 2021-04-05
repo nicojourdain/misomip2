@@ -55,7 +55,7 @@ def horizontal_interp_nonan( lon_in_1d, lat_in_1d, mlat_misomip, mlon_misomip, l
    """ Interpolates one-dimension data horizontally to a 2d numpy array reshaped to the misomip standard (lon,lat) format.
 
        Method: triangular linear barycentryc interpolation, NOT using nans (i.e. find triangle with non-nan values)
-               and nearest-neighbor interpolations for points not surrounded by 3 data points.
+               and nearest-neighbor interpolations for non-convex areas (points not surrounded by 3 data points).
 
        lon\_in\_1d, lat\_in\_1d: 1d longitude and latitude of data to interpolate
  

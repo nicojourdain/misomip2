@@ -58,6 +58,7 @@ This should create the following files:
 * Oce3d\_MITGCM_test\_A1.nc
 * OceMoor\_MITGCM\_test_A1.nc
 * OceSec\_MITGCM\_test\_A1.nc
+On a laptop (16Gb, 2GHz), the MITGCM test case took xx minutes to run. The NEMO case took 7 minutes.
 
 ### Adapt to your own ocean configuration
 
@@ -249,7 +250,7 @@ VAR_miso = mp.horizontal_interp( ds.lonT, ds.latT, mlat, mlon, lon_miso1d, lat_m
 > Interpolates one-dimension data horizontally to a 2d numpy array reshaped to the misomip standard (lon,lat) format.
 >
 >    Method: triangular linear barycentryc interpolation, NOT USING NANs (i.e. find triangle with non-nan values)
->            and nearest-neighbor interpolations for points not surrounded by 3 data points.
+>            and nearest-neighbor interpolations for non-convex areas (points not surrounded by 3 data points).
 >
 >    lon\_in\_1d, lat\_in\_1d: 1d longitude and latitude of data to interpolate
 >
