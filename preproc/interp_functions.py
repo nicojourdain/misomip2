@@ -32,7 +32,7 @@ def vertical_interp(original_depth,interpolated_depth):
    return (kinf,ksup)
 
 #============================================================================================
-def horizontal_interp( lon_in_1d, lat_in_1d, mlat_misomip, mlon_misomip, lon_out_1d, lat_out_1d, var_in_1d, weight1d=[], threshold=1.e20, skipna=False, filnocvx=False ):
+def horizontal_interp( lon_in_1d, lat_in_1d, mlat_misomip, mlon_misomip, lon_out_1d, lat_out_1d, var_in_1d, weight=[], threshold=1.e20, skipna=False, filnocvx=False ):
    """ Interpolates one-dimension data horizontally to a 2d numpy array reshaped to the misomip standard (lon,lat) format.
 
        Method: triangular linear barycentryc interpolation, using nans (i.e. gives nan if any nan in the triangle)
@@ -53,9 +53,9 @@ def horizontal_interp( lon_in_1d, lat_in_1d, mlat_misomip, mlon_misomip, lon_out
 
                 = False to fill non-convex areas with nans 
 
-       weight1d = weights used for interpolation [optional]
+       weight = weights used for interpolation [optional]
 
-       threshold = threshold below which weight1d value indicates a masked point [default=1.e20]
+       threshold = threshold below which weight value indicates a masked point [default=1.e20]
 
    """
    miss=-999999.99 # local variable, output missing values will be nan
@@ -66,10 +66,10 @@ def horizontal_interp( lon_in_1d, lat_in_1d, mlat_misomip, mlon_misomip, lon_out
      if skipna:
        lon_in_1d_nonan = lon_in_1d[ (~np.isnan(var_in_1d)) & (~np.isinf(var_in_1d)) ]
        lat_in_1d_nonan = lat_in_1d[ (~np.isnan(var_in_1d)) & (~np.isinf(var_in_1d)) ]
-       if ( np.size(weight1d) == 0 ):
+       if ( np.size(weight) == 0 ):
          txxxx = interpolate.griddata( (lon_in_1d_nonan,lat_in_1d_nonan), var1d_nonan, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
        else:
-         wgt1d_nonan = weight1d[ (~np.isnan(var_in_1d)) & (~np.isinf(var_in_1d)) ]
+         wgt1d_nonan = weight[ (~np.isnan(var_in_1d)) & (~np.isinf(var_in_1d)) ]
          wgt1d_nonan[ np.isnan(wgt1d_nonan) ] = 0.e0 # if nan in mask but not in input data
          txxxx = interpolate.griddata( (lon_in_1d_nonan,lat_in_1d_nonan), var1d_nonan*wgt1d_nonan, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
          wgt   = interpolate.griddata( (lon_in_1d_nonan,lat_in_1d_nonan), wgt1d_nonan, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
@@ -77,7 +77,7 @@ def horizontal_interp( lon_in_1d, lat_in_1d, mlat_misomip, mlon_misomip, lon_out
          txxxx[ wgt < threshold ] = miss
        out = np.reshape( txxxx, (mlat_misomip, mlon_misomip) )
        if filnocvx:
-         if ( np.size(weight1d) == 0 ):
+         if ( np.size(weight) == 0 ):
            # fill non-convex areas with nearest point (whatever its value):
            tssss = interpolate.griddata( (lon_in_1d_nonan,lat_in_1d_nonan), var1d_nonan, (lon_out_1d,lat_out_1d), method='nearest' )
          else:
@@ -94,22 +94,22 @@ def horizontal_interp( lon_in_1d, lat_in_1d, mlat_misomip, mlon_misomip, lon_out
          out[ out == miss ] = np.nan # points with weight below threshold
      else:
        if filnocvx:
-         if ( np.size(weight1d) == 0 ):
+         if ( np.size(weight) == 0 ):
            txxxx = interpolate.griddata( (lon_in_1d,lat_in_1d), var_in_1d, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
          else:
-           txxxx = interpolate.griddata( (lon_in_1d,lat_in_1d), var_in_1d*weight1d, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
-           wgt   = interpolate.griddata( (lon_in_1d,lat_in_1d), weight1d, (lon_out_1d,lat_out_1d), method='linear', fill_value=1.e0 )
+           txxxx = interpolate.griddata( (lon_in_1d,lat_in_1d), var_in_1d*weight, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
+           wgt   = interpolate.griddata( (lon_in_1d,lat_in_1d), weight, (lon_out_1d,lat_out_1d), method='linear', fill_value=1.e0 )
            txxxx = txxxx / wgt
            txxxx[ wgt < threshold ] = miss
          out = np.reshape( txxxx, (mlat_misomip, mlon_misomip) )
          lon_in_1d_nonan = lon_in_1d[ (~np.isnan(var_in_1d)) & (~np.isinf(var_in_1d)) ]
          lat_in_1d_nonan = lat_in_1d[ (~np.isnan(var_in_1d)) & (~np.isinf(var_in_1d)) ]  
-         if ( np.size(weight1d) == 0 ):
+         if ( np.size(weight) == 0 ):
            # fill non-convex areas with nearest point:
            tssss = interpolate.griddata( (lon_in_1d_nonan,lat_in_1d_nonan), var1d_nonan, (lon_out_1d,lat_out_1d), method='nearest' )
          else:
            # fill non-convex areas with nearest point having weight >= threshold :
-           wgt1d_nonan = weight1d[ (~np.isnan(var_in_1d)) & (~np.isinf(var_in_1d)) ]
+           wgt1d_nonan = weight[ (~np.isnan(var_in_1d)) & (~np.isinf(var_in_1d)) ]
            wgt1d_nonan[ np.isnan(wgt1d_nonan) ] = 0.e0 # if nan in mask but not in input data
            tmplon=lon_in_1d_nonan[ wgt1d_nonan >= threshold ]
            tmplat=lat_in_1d_nonan[ wgt1d_nonan >= threshold ]
@@ -123,11 +123,11 @@ def horizontal_interp( lon_in_1d, lat_in_1d, mlat_misomip, mlon_misomip, lon_out
          out[ out == miss ] = np.nan
        else:
          # Simplest form of horizontal tirangular linear interpolation:
-         if ( np.size(weight1d) == 0 ):
+         if ( np.size(weight) == 0 ):
            txxxx = interpolate.griddata( (lon_in_1d,lat_in_1d), var_in_1d, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
          else:
-           txxxx = interpolate.griddata( (lon_in_1d,lat_in_1d), var_in_1d*weight1d, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
-           wgt   = interpolate.griddata( (lon_in_1d,lat_in_1d), weight1d, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
+           txxxx = interpolate.griddata( (lon_in_1d,lat_in_1d), var_in_1d*weight, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
+           wgt   = interpolate.griddata( (lon_in_1d,lat_in_1d), weight, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
            txxxx = txxxx / wgt
            txxxx[ wgt < threshold ] = np.nan
          out   = np.reshape( txxxx, (mlat_misomip, mlon_misomip) )  
