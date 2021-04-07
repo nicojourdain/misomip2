@@ -10,7 +10,6 @@ from .def_attrs import add_standard_attributes_oce
 from .load_ocean_data_nemo import load_oce_mod_nemo
 from .load_ocean_data_mitgcm import load_oce_mod_mitgcm
 
-from .interp_functions import horizontal_interp_nonan 
 from .interp_functions import horizontal_interp
 from .interp_functions import vertical_interp
 

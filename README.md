@@ -58,7 +58,7 @@ This should create the following files:
 * Oce3d\_MITGCM_test\_A1.nc
 * OceMoor\_MITGCM\_test_A1.nc
 * OceSec\_MITGCM\_test\_A1.nc
-On a laptop (16Gb, 2GHz), the MITGCM test case took xx minutes to run. The NEMO case took 7 minutes.
+On a laptop (16Gb, 2GHz), the MITGCM test case took 15 minutes to run and the NEMO case took 131 seconds. Note that all variables are not defined in Oce3d\_MITGCM_test\_A1.nc.
 
 ### Adapt to your own ocean configuration
 
@@ -227,42 +227,35 @@ _Example_:
 ```
 <br/>
 
-### misomip2.preproc.horizontal\_interp( lon\_in\_1d, lat\_in\_1d, mlat\_misomip, mlon\_misomip, lon\_out\_1d, lat\_out\_1d, var\_in\_1d ):
+### misomip2.preproc.horizontal\_interp( lat\_in\_1d, lon\_in\_1d, mlat\_misomip, mlon\_misomip, lat\_out\_1d, lon\_out\_1d, var\_in\_1d, weight=[], threshold=1.e20, skipna=False, filnocvx=False ):
 > Interpolates one-dimension data horizontally to a 2d numpy array reshaped to the misomip standard (lon,lat) format.
 >
->    Method: triangular linear barycentryc interpolation, using nans (i.e. gives nan if any nan in the triangle)
+>    Method: triangular linear barycentryc interpolation.
 >
 >    lon\_in\_1d, lat\_in\_1d: 1d longitude and latitude of data to interpolate
->
->    var\_in\_1d: 1d input data (same dimension as lon\_in\_1d and lat\_in\_1d)
 >
 >    mlat\_misomip, mlon\_misomip: misomip grid size (nb points) alond latitude and longitude dimensions
 >
 >    lon\_out\_1d, lat\_out\_1d: 1d longitude and latitude of the target misomip grid
 >
-_Example_:
-```bash
-VAR_miso = mp.horizontal_interp( ds.lonT, ds.latT, mlat, mlon, lon_miso1d, lat_miso1d, ds.VAR )
-```
-<br/>
-
-### misomip2.preproc.horizontal\_interp\_nonan( lon\_in\_1d, lat\_in\_1d, mlat\_misomip, mlon\_misomip, lon\_out\_1d, lat\_out\_1d, var\_in\_1d ):
-> Interpolates one-dimension data horizontally to a 2d numpy array reshaped to the misomip standard (lon,lat) format.
->
->    Method: triangular linear barycentryc interpolation, NOT USING NANs (i.e. find triangle with non-nan values)
->            and nearest-neighbor interpolations for non-convex areas (points not surrounded by 3 data points).
->
->    lon\_in\_1d, lat\_in\_1d: 1d longitude and latitude of data to interpolate
->
 >    var\_in\_1d: 1d input data (same dimension as lon\_in\_1d and lat\_in\_1d)
 >
->    mlat\_misomip, mlon\_misomip: misomip grid size (nb points) alond latitude and longitude dimensions
+>    skipna = False to keep nans in interpolation, i.e. gives nan if any triangle node is nan [default]
 >
->    lon\_out\_1d, lat\_out\_1d: 1d longitude and latitude of the target misomip grid
+>           = True to find interpolation triangle nodes with non-nan values
 >
-_Example_:
+>    filnocvx = True to use nearest-neighbor to fill non-convex areas, i.e. for which no triangulation is possible [default]
+>
+>             = False to fill non-convex areas with nans 
+>
+>    weight = weights used for interpolation [optional]
+>
+>    threshold = threshold below which weight value indicates a masked point [default=1.e20]
+>
+_Examples_:
 ```bash
-VAR_miso = mp.horizontal_interp_nonan( ds.lonT, ds.latT, mlat, mlon, lon_miso1d, lat_miso1d, ds.VAR )
+VAR_miso = mp.horizontal_interp( ds.latT, ds.lonT, mlat, mlon, lat_miso1d, lon_miso1d, ds.VAR )
+VAR_miso = mp.horizontal_interp( ds.latT, ds.lonT, mlat, mlon, lat_miso1d, lon_miso1d, ds.VAR, skipna=True, weight=ds.siconc, threshold=0.1 )
 ```
 <br/><br/>
 

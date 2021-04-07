@@ -68,8 +68,6 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    ncSRF = xr.open_mfdataset(files_SRF,decode_coords=False)
    ncM = xr.open_mfdataset(files_M,decode_coords=False)
 
-   print(ncT)
-
    mtime = ncT.time.shape[0]
 
    # longitude & latitude on U, V, T grids
@@ -122,12 +120,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    print('Minimum local grid angle in degrees w.r.t. (zonal,meridional):',thetaU.min().values*180./np.pi)
    print('Maximum local grid angle in degrees w.r.t. (zonal,meridional):',thetaU.max().values*180./np.pi)
 
-   # Define useful masks on U, V, C/T grids 
-   maskT = ncM.hFacC # 3d mask (=1 if ocean, =0 elsewhere)
-   maskU = ncM.hFacW # 3d mask
-   maskV = ncM.hFacS # 3d mask
-   
-   [mz, my, mx] = maskT.shape
+   [mz, my, mx] = ncM.hFacC.shape
 
    # Domain mask (ones with a halo of nans), used not to interpolate beyond the original domain:
    halonan = np.ones((my,mx))
@@ -137,11 +130,14 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    DOMMSKU = xr.DataArray( halonan, dims=['YC', 'XG'] )
    DOMMSKV = xr.DataArray( halonan, dims=['YG', 'XC'] )
 
-   # Ocean fraction at each level:
-   LEVOF = maskT*100.0
+   # Ocean fraction at each level on U, V, C/T grids:
+   LEVOFT = ncM.hFacC*100.0 # (=100 if ocean, =0 elsewhere)
+   LEVOFU = ncM.hFacW*100.0
+   LEVOFV = ncM.hFacS*100.0
 
    # ice-shelf fraction:
-   SFTFLI = LEVOF.max('Z').where( (LEVOF.max('Z')>1.0) & (LEVOF.isel(Z=0)==0.0), 0.0 )
+   SFTFLI = LEVOFT.max('Z').where( (LEVOFT.max('Z')>1.0) & (LEVOFT.isel(Z=0)<1.0), 0.0 )
+   print('max/min SFTFLI : ',SFTFLI.max().values, SFTFLI.min().values)
 
    # Bathymetry (including under ice shelves) [m, positive]
    if ( "Depth" in ncM.data_vars ):
@@ -170,7 +166,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
      for i in range(np.size(IndIS_x)):
        Ind_firstnonempty = np.where((ncM.hFacC.values[:,IndIS_y[i],IndIS_x[i]])>0)[0][0]
        ISdraft[IndIS_y[i],IndIS_x[i]] = ncM.Zl.values[Ind_firstnonempty]-ncM.hFacC.values[Ind_firstnonempty,IndIS_y[i],IndIS_x[i]]*dz[Ind_firstnonempty]
-     DEPFLI = xr.DataArray( ISdraft, dims=['YC', 'XC'] )
+     DEPFLI = xr.DataArray( -ISdraft, dims=['YC', 'XC'] )
  
    # ocean temperature [degC]
    if ( "toce" in ncT.data_vars ):
@@ -313,7 +309,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
      DYDRFLI = ncT.sogammat_cav
    else:
      print('@@@@@ WARNING @@@@@   No data found for DYDRFLI  -->  filled with NaNs')
-     DYDRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
+     DYDRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # ice shelf thermal driving [degC]:
    if ( "isfthermdr" in ncT.data_vars ):
@@ -322,7 +318,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
      THDRFLI = ncT.thermald_cav
    else:
      print('@@@@@ WARNING @@@@@   No data found for THDRFLI  -->  filled with NaNs')
-     THDRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
+     THDRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # ice shelf haline driving [0.001]:
    if ( "isfhalindr" in ncT.data_vars ):
@@ -331,7 +327,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
      HADRFLI = ncT.halined_cav
    else:
      print('@@@@@ WARNING @@@@@   No data found for HADRFLI  -->  filled with NaNs')
-     HADRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
+     HADRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # sea-ice concentration [0-100]
    if ( "siconc" in ncI.data_vars ):
@@ -401,10 +397,10 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    # Reduce the size of ocean dataset
  
    [lonmin,lonmax,latmin,latmax] = grid_bounds_oce(region=region)
-   lonmin=lonmin-1.1 # take a bit more for interpolation
-   lonmax=lonmax+1.1
-   latmin=latmin-1.1
-   latmax=latmax+1.1
+   lonmin=lonmin-0.5 # take a bit more for interpolation
+   lonmax=lonmax+0.5
+   latmin=latmin-0.5
+   latmax=latmax+0.5
 
    condT2d = ( (latT >= latmin) & (latT <= latmax) & (lonT >= lonmin) & (lonT <= lonmax) )
 
@@ -433,7 +429,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
         jmax=jj
         break
 
-   print([imin,imax,jmin,jmax])
+   print('Reducing domain size to useful area, i.e.: ',[imin,imax,jmin,jmax])
 
    #----------
    # Create new xarray dataset including all useful variables:
@@ -453,6 +449,9 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
        "TOB":       (["time", "sxy"], np.reshape( TOB.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "SOB":       (["time", "sxy"], np.reshape( SOB.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "FICESHELF": (["time", "sxy"], np.reshape( FICESHELF.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
+       "DYDRFLI":   (["time", "sxy"], np.reshape( DYDRFLI.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
+       "THDRFLI":   (["time", "sxy"], np.reshape( THDRFLI.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
+       "HADRFLI":   (["time", "sxy"], np.reshape( HADRFLI.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "MSFTBAROT": (["time", "sxy"], np.reshape( MSFTBAROT.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "HFDS":      (["time", "sxy"], np.reshape( HFDS.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "WFOATRLI":  (["time", "sxy"], np.reshape( WFOATRLI.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
@@ -461,10 +460,9 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
        "SIVOL":     (["time", "sxy"], np.reshape( SIVOL.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "SIUX":      (["time", "sxy"], np.reshape( SIUX.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "SIVY":      (["time", "sxy"], np.reshape( SIVY.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
-       "LEVOF":     (["z", "sxy"], np.reshape( LEVOF.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mz,nxy)) ),
-       "maskT":     (["z", "sxy"], np.reshape( maskT.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mz,nxy)) ),
-       "maskU":     (["z", "sxy"], np.reshape( maskU.isel(XG=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mz,nxy)) ),
-       "maskV":     (["z", "sxy"], np.reshape( maskV.isel(XC=slice(imin,imax+1),YG=slice(jmin,jmax+1)).values, (mz,nxy)) ),
+       "LEVOFT":    (["z", "sxy"], np.reshape( LEVOFT.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mz,nxy)) ),
+       "LEVOFU":    (["z", "sxy"], np.reshape( LEVOFU.isel(XG=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mz,nxy)) ),
+       "LEVOFV":    (["z", "sxy"], np.reshape( LEVOFV.isel(XC=slice(imin,imax+1),YG=slice(jmin,jmax+1)).values, (mz,nxy)) ),
        "SFTFLI":    (["sxy"], np.reshape( SFTFLI.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, nxy) ),
        "DEPFLI":    (["sxy"], np.reshape( DEPFLI.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, nxy) ),
        "DEPTHO":    (["sxy"], np.reshape( DEPTHO.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, nxy) ),

@@ -105,7 +105,9 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    print('Maximum local grid angle in degrees w.r.t. (zonal,meridional):',thetaU.max().values*180./np.pi)
 
    # Ocean fraction at each level:
-   LEVOF = maskT*100.0
+   LEVOFT = maskT*100.0
+   LEVOFU = maskU*100.0
+   LEVOFV = maskV*100.0
 
    # 2d ice-shelf fractoin:
    SFTFLI = ncM.misf*1.e0
@@ -402,7 +404,22 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
         jmax=jj
         break
 
-   print([imin,imax,jmin,jmax])
+   print('Reducing domain to useful part, i.e. : ',[imin,imax,jmin,jmax])
+
+   #----------
+   # Attribute nan value to the LEVOF of points far from ocean points
+   # i.e. let LEVOF=0 for ice/land points adjacent to ocean points, and put LEVOF=nan for points farther.
+   # (to remove them from the interpolation process)
+   #msktmpT =  LEVOFT.isel(z=0).shift(x=1)+LEVOFT.isel(z=0).shift(x=-1)+LEVOFT.isel(z=0).shift(y=1)+LEVOFT.isel(z=0).shift(y=-1)\
+   #          +LEVOFT.isel(z=0).shift(x=1,y=1)+LEVOFT.isel(z=0).shift(x=-1,y=1)+LEVOFT.isel(z=0).shift(x=1,y=-1)+LEVOFT.isel(z=0).shift(x=-1,y=-1) 
+   #msktmpU =  LEVOFU.isel(z=0).shift(x=1)+LEVOFU.isel(z=0).shift(x=-1)+LEVOFU.isel(z=0).shift(y=1)+LEVOFU.isel(z=0).shift(y=-1)\
+   #          +LEVOFU.isel(z=0).shift(x=1,y=1)+LEVOFU.isel(z=0).shift(x=-1,y=1)+LEVOFU.isel(z=0).shift(x=1,y=-1)+LEVOFU.isel(z=0).shift(x=-1,y=-1) 
+   #msktmpV =  LEVOFV.isel(z=0).shift(x=1)+LEVOFV.isel(z=0).shift(x=-1)+LEVOFV.isel(z=0).shift(y=1)+LEVOFV.isel(z=0).shift(y=-1)\
+   #          +LEVOFV.isel(z=0).shift(x=1,y=1)+LEVOFV.isel(z=0).shift(x=-1,y=1)+LEVOFV.isel(z=0).shift(x=1,y=-1)+LEVOFV.isel(z=0).shift(x=-1,y=-1) 
+   #for kk in np.arange(depTUV.shape[0]):
+   #  LEVOFT.values[kk,:,:] = LEVOFT.isel(z=kk)*msktmpT.where( msktmpT.values > 0 ).values
+   #  LEVOFU.values[kk,:,:] = LEVOFU.isel(z=kk)*msktmpU.where( msktmpU.values > 0 ).values
+   #  LEVOFV.values[kk,:,:] = LEVOFV.isel(z=kk)*msktmpV.where( msktmpV.values > 0 ).values
 
    #----------
    # Create new xarray dataset including all useful variables:
@@ -422,6 +439,9 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
        "TOB":       (["time", "sxy"], np.reshape( TOB.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "SOB":       (["time", "sxy"], np.reshape( SOB.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "FICESHELF": (["time", "sxy"], np.reshape( FICESHELF.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
+       "DYDRFLI":   (["time", "sxy"], np.reshape( DYDRFLI.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
+       "THDRFLI":   (["time", "sxy"], np.reshape( THDRFLI.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
+       "HADRFLI":   (["time", "sxy"], np.reshape( HADRFLI.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "MSFTBAROT": (["time", "sxy"], np.reshape( MSFTBAROT.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "HFDS":      (["time", "sxy"], np.reshape( HFDS.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "WFOATRLI":  (["time", "sxy"], np.reshape( WFOATRLI.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
@@ -430,10 +450,9 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
        "SIVOL":     (["time", "sxy"], np.reshape( SIVOL.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "SIUX":      (["time", "sxy"], np.reshape( SIUX.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
        "SIVY":      (["time", "sxy"], np.reshape( SIVY.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,nxy)) ),
-       "LEVOF":     (["z", "sxy"], np.reshape( LEVOF.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mz,nxy)) ),
-       "maskT":     (["z", "sxy"], np.reshape( maskT.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mz,nxy)) ),
-       "maskU":     (["z", "sxy"], np.reshape( maskU.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mz,nxy)) ),
-       "maskV":     (["z", "sxy"], np.reshape( maskV.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mz,nxy)) ),
+       "LEVOFT":     (["z", "sxy"], np.reshape( LEVOFT.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mz,nxy)) ),
+       "LEVOFU":     (["z", "sxy"], np.reshape( LEVOFU.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mz,nxy)) ),
+       "LEVOFV":     (["z", "sxy"], np.reshape( LEVOFV.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mz,nxy)) ),
        "SFTFLI":    (["sxy"], np.reshape( SFTFLI.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, nxy) ),
        "DEPFLI":    (["sxy"], np.reshape( DEPFLI.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, nxy) ),
        "DEPTHO":    (["sxy"], np.reshape( DEPTHO.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, nxy) ),
