@@ -5,7 +5,8 @@ This package is written for python3 and largely based on [xarray](http://xarray.
 
 ### Contributors
 * Nicolas C. Jourdain (IGE, CNRS-UGA, Grenoble, France)
-* Jan De Rydt (U. Northumbria Newcastle, UK)
+* Jan De Rydt (University Northumbria Newcastle, UK)
+* Yoshihiro Nakayama (Hokkaido University, Japan)
 
 All MISOMIP participants who want to contribute to this package are invited to fork this github repo and make a pull request as [documented here](https://opensource.com/article/19/7/create-pull-request-github).
 
@@ -27,15 +28,8 @@ conda install -c conda-forge gsw
 Then, to clone the misomip2 package and enable the import of misomip2 functions from anywhere, do:
 
 ```bash
-export MYPACK=/User/wmunk/MY_PACKAGES # to be adapted
-cd $MYPACK
-
 git clone https://github.com/nicojourdain/misomip2.git
 # or git clone git@github.com:nicojourdain/misomip2.git
-
-cat << EOF >> ~/.bashrc # or .bash_profile or .profile or equivalent
-export PYTHONPATH="${MYPACK}:\$PYTHONPATH"
-EOF
 ```
 
 You can update the cloned directory anytime with ```git pull``` executed in that directory. 
@@ -50,7 +44,7 @@ We provide a test case so that users can check that this package works well in t
 
 ### Ocean test cases 
 
-We provide 2 months of raw outputs from NEMO and MITGCM (Amundsen Sea configurations) in ```misomip2/examples/models/oce/```. To interpolate these model outputs to the standard MISOMIP2 grids, edit **interpolate_to_common_grid_oce.py** and select ```model='MITGCM_test'``` (you can try ```model='NEMO_test'``` just after). Execute it as:
+We provide 2 months of raw outputs from NEMO and MITGCM (Amundsen Sea configurations) in ```misomip2/examples/models/oce/```. To interpolate these model outputs to the standard MISOMIP2 grids, edit **interpolate_to_common_grid_oce.py** and edit the path where you cloned the misomip2 github repository (currently ```sys.path.append("/Users/jourdain/MY_SCRIPTS")```), then select ```model='MITGCM_test'``` (you can try ```model='NEMO_test'``` just after). Execute it as:
 ```bash
 python interpolate_to_common_grid_oce.py
 ```
@@ -58,6 +52,7 @@ This should create the following files:
 * Oce3d\_MITGCM_test\_A1.nc
 * OceMoor\_MITGCM\_test_A1.nc
 * OceSec\_MITGCM\_test\_A1.nc
+
 On a laptop (16Gb, 2GHz), the MITGCM test case took 15 minutes to run and the NEMO case took 131 seconds. Note that all variables are not defined in Oce3d\_MITGCM_test\_A1.nc.
 
 ### Adapt to your own ocean configuration
