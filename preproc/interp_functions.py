@@ -5,7 +5,7 @@ from scipy import interpolate
 
 #============================================================================================
 def vertical_interp(original_depth,interpolated_depth):
-   """ Find upper and lower bound indices for simple vertical interpolation
+   """ Find upper and lower bound indices for simple vertical 1d interpolation
 
    """
    if ( original_depth[1] < original_depth[0] ):
@@ -17,6 +17,42 @@ def vertical_interp(original_depth,interpolated_depth):
    ksup=np.zeros(nn,dtype='int')
    for k in np.arange(nn):
       knear = np.argmin( np.abs( original_depth - interpolated_depth[k] ) )
+      if (original_depth[knear] > interpolated_depth[k]):
+        ksup[k] = knear
+        if ll_kupward:
+          kinf[k] = np.min([ np.size(original_depth)-1, knear+1 ])
+        else:
+          kinf[k] = np.max([ 0, knear-1 ])
+      else:
+        kinf[k] = knear
+        if ll_kupward:
+          ksup[k] = np.max([ 0, knear-1 ])
+        else:
+          ksup[k] = np.min([ np.size(original_depth)-1, knear+1 ])
+   return (kinf,ksup)
+
+#============================================================================================
+def vertical_interp_3d(original_depth,interpolated_depth):
+   """ Find upper and lower bound indices for vertical 3d interpolation
+
+       original_depth : 3d xarray data
+
+   """
+   if ( original_depth[1,0,0] < original_depth[0,0,0] ):
+     ll_kupward = True
+   else:
+     ll_kupward = False
+   nn = np.size(interpolated_depth)
+   kinf=np.zeros(nn,dtype='int')
+   ksup=np.zeros(nn,dtype='int')
+   for k in np.arange(nn):
+      diff = original_depth - interpolated_depth[k]
+      knear = diff.argmin('Z')
+      
+
+      knear = np.argmin( np.abs( original_depth - interpolated_depth[k] ), axis=0 )
+      
+
       if (original_depth[knear] > interpolated_depth[k]):
         ksup[k] = knear
         if ll_kupward:
@@ -86,10 +122,7 @@ def horizontal_interp( lat_in_1d, lon_in_1d, mlat_misomip, mlon_misomip, lat_out
            tmplon=lon_in_1d_nonan[ wgt1d_nonan >= threshold ]
            tmplat=lat_in_1d_nonan[ wgt1d_nonan >= threshold ]
            tmpvar=var1d_nonan[ wgt1d_nonan >= threshold ]
-           #tmpwgt=wgt1d_nonan[ wgt1d_nonan >= threshold ]
            tssss = interpolate.griddata( (tmplon,tmplat), tmpvar, (lon_out_1d,lat_out_1d), method='nearest' )
-           #wgtss = interpolate.griddata( (tmplon,tmplat), tmpwgt, (lon_out_1d,lat_out_1d), method='nearest' )
-           #tssss[ wgtss < threshold ] = miss
          tmp   = np.reshape( tssss, (mlat_misomip, mlon_misomip) )
          out[ (np.isnan(out)) | (np.isinf(out)) ] = tmp[ (np.isnan(out)) | (np.isinf(out)) ] # points out of the convex area
          out[ out == miss ] = np.nan # points with weight below threshold

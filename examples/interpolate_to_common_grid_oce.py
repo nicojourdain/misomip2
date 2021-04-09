@@ -13,6 +13,8 @@
 import numpy as np
 import xarray as xr
 import sys
+sys.path.append("/Users/jourdain/MY_SCRIPTS")
+#sys.path.append("/Users/nakayama/Documents/GitHub/")
 import misomip2.preproc as mp
 import os
 from datetime import datetime
@@ -25,8 +27,8 @@ np.seterr(divide='ignore', invalid='ignore') # to avoid warning due to divide by
 # 0- General information:
 
 # Official name in MISOMIP2:
-#model='NEMO_test'
-model='MITGCM_test'
+model='NEMO_test'
+#model='MITGCM_test'
 
 reg='Amundsen' # 'Amundsen' or 'Weddell'
 
@@ -161,7 +163,23 @@ mtime = np.shape(oce.SO)[0]
 DOMMSK_miso =               mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, oce.DOMMSKT )
 DOMMSK_miso = DOMMSK_miso + mp.horizontal_interp( latU, lonU, mlat, mlon, lat_miso1d, lon_miso1d, oce.DOMMSKU )
 DOMMSK_miso = DOMMSK_miso + mp.horizontal_interp( latV, lonV, mlat, mlon, lat_miso1d, lon_miso1d, oce.DOMMSKV )
-print('max/min DOMMSK_miso : ', np.nanmax(DOMMSK_miso), np.nanmin(DOMMSK_miso) )
+
+# horizontal interpolation grid roation angles :
+theT = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, oce.thetaT )
+theU = mp.horizontal_interp( latU, lonU, mlat, mlon, lat_miso1d, lon_miso1d, oce.thetaU )
+theV = mp.horizontal_interp( latV, lonV, mlat, mlon, lat_miso1d, lon_miso1d, oce.thetaV )
+
+# Ice shelf fraction on MISOMIP grid (in [0-100], =nan beyond model domain)
+SFTFLI_miso = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, oce.SFTFLI )
+SFTFLI_miso[ np.isnan(DOMMSK_miso) ] = np.nan # will update to missval at the end of the calculation
+
+# Depth of floating ice on MISOMIP grid (ice-shelf draft) (=nan where no ice shelf or beyond model domain)
+DEPFLI_miso = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, oce.DEPFLI, weight=oce.SFTFLI*oce.DOMMSKT, skipna=True, filnocvx=True, threshold=epsfr )
+DEPFLI_miso[ np.isnan(DOMMSK_miso) | np.isnan(DEPFLI_miso) ] = missval
+
+# Ocean depth on MISOMIP grid (=nan where land or grounded ice or beyond model domain)
+DEPTHO_miso = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, oce.DEPTHO, weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr )
+DEPTHO_miso[ np.isnan(DOMMSK_miso) | np.isnan(DEPTHO_miso) ] = missval 
 
 # Sea area fraction at each vertical level on the MISOMIP grid: 
 LEVOF_miso = np.zeros((mdep,mlat,mlon))
@@ -180,31 +198,12 @@ for kk in np.arange(mdep):
   tmp_LEVT[kk,:] = tmp_OC # =LEVOF innterpolated vertically but not horizontally
   tzz = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, tmp_OC )
   tzz[ np.isnan(DOMMSK_miso) ] = np.nan # will update to missval at the end of the calculation
+  tzz[ (DEPTHO_miso<dep_miso[kk]) ]=0.0 # criteria on DEPTHO_miso to account for partial step if needed.
   LEVOF_miso[kk,:,:] = tzz # saved to netcdf
   tmp_OC = ( LEVOFU.isel(z=kinf[kk]) * tmpaT + LEVOFU.isel(z=ksup[kk]) * tmpbT ) / tmpxT
   tmp_LEVU[kk,:] = tmp_OC
   tmp_OC = ( LEVOFV.isel(z=kinf[kk]) * tmpaT + LEVOFV.isel(z=ksup[kk]) * tmpbT ) / tmpxT
   tmp_LEVV[kk,:] = tmp_OC
-
-# horizontal interpolation grid roation angles :
-theT = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, oce.thetaT )
-theU = mp.horizontal_interp( latU, lonU, mlat, mlon, lat_miso1d, lon_miso1d, oce.thetaU )
-theV = mp.horizontal_interp( latV, lonV, mlat, mlon, lat_miso1d, lon_miso1d, oce.thetaV )
-
-# Ice shelf fraction on MISOMIP grid (in [0-100], =nan beyond model domain)
-SFTFLI_miso = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, oce.SFTFLI )
-#SFTFLI_miso = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, oce.SFTFLI, weight=oce.DOMMSKT )
-print('max/min SFTFLI_miso : ', np.nanmax(SFTFLI_miso), np.nanmin(SFTFLI_miso) )
-SFTFLI_miso[ np.isnan(DOMMSK_miso) ] = np.nan # will update to missval at the end of the calculation
-print('max/min SFTFLI_miso : ', np.nanmax(SFTFLI_miso), np.nanmin(SFTFLI_miso) )
-
-# Depth of floating ice on MISOMIP grid (ice-shelf draft) (=nan where no ice shelf or beyond model domain)
-DEPFLI_miso = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, oce.DEPFLI, weight=oce.SFTFLI*oce.DOMMSKT, skipna=True, filnocvx=True, threshold=epsfr )
-DEPFLI_miso[ np.isnan(DOMMSK_miso) | np.isnan(DEPFLI_miso) ] = missval
-
-# Ocean depth on MISOMIP grid (=nan where land or grounded ice or beyond model domain)
-DEPTHO_miso = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, oce.DEPTHO, weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr )
-DEPTHO_miso[ np.isnan(DOMMSK_miso) | np.isnan(DEPTHO_miso) ] = missval 
 
 #----- interpolation of time-varying fields:
 
@@ -430,16 +429,37 @@ print('  Execution time: ',datetime.now() - startTime)
 mlonlatsec = np.size(lon_sect1d)
 mdepsect = np.size(dep_sect)
 
+# Reduce input data size
+lonmin_sect = np.min( lon_sect1d ) - 1.1
+lonmax_sect = np.max( lon_sect1d ) + 1.1
+latmin_sect = np.min( lat_sect1d ) - 1.1
+latmax_sect = np.max( lat_sect1d ) + 1.1
+
+cond_secT=( (oce.latT>latmin_sect) & (oce.latT<latmax_sect) & (oce.lonT>lonmin_sect) & (oce.lonT<lonmax_sect) )
+
+# model coordinates:
+lonT=oce.lonT.where(cond_secT,drop=True)
+latT=oce.latT.where(cond_secT,drop=True)
+
+# 3d sea fraction
+LEVOFT=oce.LEVOFT.where(cond_secT,drop=True)
+# 2d sea fraction (including under-ice-shelf seas)
+seafracT=LEVOFT.max('z',skipna=True) # 100 if any ocean point, including under ice shelves, =0 or =nan if no ocean point
+# 2d sea fraction (NOT including under-ice-shelf seas)
+openseafracT=LEVOFT.isel(z=0) # 100 only if open ocean point
+
 # Lower and upper indices for vertical interpolation:
 [kinf,ksup] = mp.vertical_interp(oce.depTUV.values,dep_sect)
 
 # mask showing the original domain (nan where interpolation of any of T, U, V grid is nan):
-DOMMSK_sect =               mp.horizontal_interp( latT, lonT, mlonlatsec, 1, lat_sect1d, lon_sect1d, oce.DOMMSKT )
-DOMMSK_sect = DOMMSK_sect + mp.horizontal_interp( lonU, latU, mlonlatsec, 1, lon_sect1d, lat_sect1d, oce.DOMMSKU )
-DOMMSK_sect = DOMMSK_sect + mp.horizontal_interp( lonV, latV, mlonlatsec, 1, lon_sect1d, lat_sect1d, oce.DOMMSKV )
-DOMMSK_sect = np.squeeze(DOMMSK_sect)
+DOMMSK_sect = np.squeeze(mp.horizontal_interp( latT, lonT, mlonlatsec, 1, lat_sect1d, lon_sect1d, oce.DOMMSKT.where(cond_secT,drop=True) ))
 
 domcond = ( np.isnan(DOMMSK_sect) )
+
+# Ocean depth on MISOMIP grid (=nan where land or grounded ice or beyond model domain)
+DEPTHO_sect = np.squeeze( mp.horizontal_interp( latT, lonT, mlonlatsec, 1, lat_sect1d, lon_sect1d, oce.DEPTHO.where(cond_secT,drop=True), \
+                                                weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr ))
+DEPTHO_sect[ domcond | np.isnan(DEPTHO_sect) ] = missval
 
 # vertical then horizontal interpolation of constant 3d fields to common grid :
 LEVOF_sect = np.zeros((mdepsect,mlonlatsec)) + missval
@@ -456,6 +476,7 @@ for kk in np.arange(mdepsect):
   tmp_LEVT[kk,:] = tmp_OC # LEVOF innterpolated vertically but not horizontally
   tzz = np.squeeze(mp.horizontal_interp( latT, lonT, mlonlatsec, 1, lat_sect1d, lon_sect1d, tmp_OC ))
   tzz[ domcond ] = missval
+  tzz[ (DEPTHO_sect>dep_sect[kk]) ]=0.0 # criteria on DEPTHO_sect to account for partial step if needed.
   LEVOF_sect[kk,:] = tzz
 
 SO_sect     = np.zeros((mtime,mdepsect,mlonlatsec)) + missval
@@ -473,8 +494,8 @@ for ll in np.arange(mtime):
       tmpaT = LEVOFT.isel(z=kinf[kk]) * (oce.depTUV.isel(z=ksup[kk])-dep_sect[kk])
       tmpbT = LEVOFT.isel(z=ksup[kk]) * (dep_sect[kk]-oce.depTUV.isel(z=kinf[kk]))
     tmpxT = tmpaT + tmpbT
-    tmp_SS = ( oce.SO.isel(time=ll,z=kinf[kk]) * tmpaT + oce.SO.isel(time=ll,z=ksup[kk]) * tmpbT ) / tmpxT # Inf if no interpolable value
-    tmp_TT = ( oce.THETAO.isel(time=ll,z=kinf[kk]) * tmpaT + oce.THETAO.isel(time=ll,z=ksup[kk]) * tmpbT ) / tmpxT
+    tmp_SS = ( oce.SO.where(cond_secT,drop=True).isel(time=ll,z=kinf[kk]) * tmpaT + oce.SO.where(cond_secT,drop=True).isel(time=ll,z=ksup[kk]) * tmpbT ) / tmpxT # Inf if no interpolable value
+    tmp_TT = ( oce.THETAO.where(cond_secT,drop=True).isel(time=ll,z=kinf[kk]) * tmpaT + oce.THETAO.where(cond_secT,drop=True).isel(time=ll,z=ksup[kk]) * tmpbT ) / tmpxT
 
     tzz = np.squeeze(mp.horizontal_interp( latT, lonT, mlonlatsec, 1, lat_sect1d, lon_sect1d, tmp_SS, weight=tmp_LEVT[kk,:], skipna=True, filnocvx=True, threshold=epsfr ) )
     tzz[ condkk | (np.isnan(tzz)) ] = missval
@@ -524,15 +545,37 @@ print('  Execution time: ',datetime.now() - startTime)
 [lon_moor0d,lat_moor0d,dep_moor] = mp.generate_mooring_grid_oce(region=reg)
 mdepmoor = np.size(dep_moor)
 
+# Reduce input data size
+lonmin_moor = np.min( lon_moor0d ) - 1.1
+lonmax_moor = np.max( lon_moor0d ) + 1.1
+latmin_moor = np.min( lat_moor0d ) - 1.1
+latmax_moor = np.max( lat_moor0d ) + 1.1
+
+cond_mooT=( (oce.latT>latmin_moor) & (oce.latT<latmax_moor) & (oce.lonT>lonmin_moor) & (oce.lonT<lonmax_moor) )
+
+# model coordinates:
+lonT=oce.lonT.where(cond_mooT,drop=True)
+latT=oce.latT.where(cond_mooT,drop=True)
+
+# 3d sea fraction
+LEVOFT=oce.LEVOFT.where(cond_mooT,drop=True)
+# 2d sea fraction (including under-ice-shelf seas)
+seafracT=LEVOFT.max('z',skipna=True) # 100 if any ocean point, including under ice shelves, =0 or =nan if no ocean point
+# 2d sea fraction (NOT including under-ice-shelf seas)
+openseafracT=LEVOFT.isel(z=0) # 100 only if open ocean point
+
 # Lower and upper indices for vertical interpolation:
 [kinf,ksup] = mp.vertical_interp(oce.depTUV.values,dep_moor)
 
 mtime = np.shape(oce.SO)[0]
 
 # mask showing the original domain (nan where interpolation of any of T, U, V grid is nan):
-DOMMSK_moor =               np.squeeze(mp.horizontal_interp( latT, lonT, 1, 1, lat_moor0d, lon_moor0d, oce.DOMMSKT ))
-DOMMSK_moor = DOMMSK_moor + np.squeeze(mp.horizontal_interp( latU, lonU, 1, 1, lat_moor0d, lon_moor0d, oce.DOMMSKU ))
-DOMMSK_moor = DOMMSK_moor + np.squeeze(mp.horizontal_interp( latV, lonV, 1, 1, lat_moor0d, lon_moor0d, oce.DOMMSKV ))
+DOMMSK_moor = np.squeeze(mp.horizontal_interp( latT, lonT, 1, 1, lat_moor0d, lon_moor0d, oce.DOMMSKT.where(cond_mooT,drop=True) ))
+
+# Ocean depth on MISOMIP grid (=nan where land or grounded ice or beyond model domain)
+DEPTHO_moor = np.squeeze(mp.horizontal_interp( latT, lonT, 1, 1, lat_moor0d, lon_moor0d, oce.DEPTHO.where(cond_mooT,drop=True), \
+                                               weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr ) )
+DEPTHO_moor[ np.isnan(DOMMSK_moor) | np.isnan(DEPTHO_moor) ] = missval
 
 # vertical then horizontal interpolation of constant 3d fields to common grid :
 LEVOF_moor = np.zeros((mdepmoor)) + missval
@@ -550,6 +593,7 @@ for kk in np.arange(mdepmoor):
   tzz = np.squeeze(mp.horizontal_interp( latT, lonT, 1, 1, lat_moor0d, lon_moor0d, tmp_OC ))
   if ( np.isnan(DOMMSK_moor) ):
      tzz = missval
+  tzz[ (DEPTHO_moor<dep_moor[kk]) ]=0.0 # criteria on DEPTHO_moor to account for partial step if needed.
   LEVOF_moor[kk] = tzz
 LEVOF_moor[ LEVOF_moor < epsfr ] = 0.e0
 tmp_LEVT[ tmp_LEVT < epsfr ] = 0.e0
@@ -567,8 +611,8 @@ for ll in np.arange(mtime):
       tmpaT = LEVOFT.isel(z=kinf[kk]) * (oce.depTUV.isel(z=ksup[kk])-dep_moor[kk])
       tmpbT = LEVOFT.isel(z=ksup[kk]) * (dep_moor[kk]-oce.depTUV.isel(z=kinf[kk]))
     tmpxT = tmpaT + tmpbT
-    tmp_SS = ( oce.SO.isel(time=ll,z=kinf[kk]) * tmpaT + oce.SO.isel(time=ll,z=ksup[kk]) * tmpbT ) / tmpxT # Inf if no interpolable value
-    tmp_TT = ( oce.THETAO.isel(time=ll,z=kinf[kk]) * tmpaT + oce.THETAO.isel(time=ll,z=ksup[kk]) * tmpbT ) / tmpxT
+    tmp_SS = ( oce.SO.where(cond_mooT,drop=True).isel(time=ll,z=kinf[kk]) * tmpaT + oce.SO.where(cond_mooT,drop=True).isel(time=ll,z=ksup[kk]) * tmpbT ) / tmpxT # Inf if no interpolable value
+    tmp_TT = ( oce.THETAO.where(cond_mooT,drop=True).isel(time=ll,z=kinf[kk]) * tmpaT + oce.THETAO.where(cond_mooT,drop=True).isel(time=ll,z=ksup[kk]) * tmpbT ) / tmpxT
 
     condkk = ( (LEVOF_moor[kk] < epsfr) | (np.isnan(DOMMSK_moor)) )
 

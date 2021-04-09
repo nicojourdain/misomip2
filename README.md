@@ -44,7 +44,7 @@ We provide a test case so that users can check that this package works well in t
 
 ### Ocean test cases 
 
-We provide 2 months of raw outputs from NEMO and MITGCM (Amundsen Sea configurations) in ```misomip2/examples/models/oce/```. To interpolate these model outputs to the standard MISOMIP2 grids, edit **interpolate_to_common_grid_oce.py** and edit the path where you cloned the misomip2 github repository (currently ```sys.path.append("/Users/jourdain/MY_SCRIPTS")```), then select ```model='MITGCM_test'``` (you can try ```model='NEMO_test'``` just after). Execute it as:
+We provide 2 months of raw outputs from NEMO and MITGCM (Amundsen Sea configurations) in ```misomip2/examples/models/oce/```. To interpolate these model outputs to the standard MISOMIP2 grids, edit **interpolate_to_common_grid_oce.py** and edit the path where you cloned the misomip2 github repository (currently ```sys.path.append("/Users/jourdain/MY_SCRIPTS")```), which allows you to run it from anywhere, then select ```model='MITGCM_test'``` (you can try ```model='NEMO_test'``` just after). Execute it as:
 ```bash
 python interpolate_to_common_grid_oce.py
 ```
@@ -53,7 +53,7 @@ This should create the following files:
 * OceMoor\_MITGCM\_test_A1.nc
 * OceSec\_MITGCM\_test\_A1.nc
 
-On a laptop (16Gb, 2GHz), the MITGCM test case took 15 minutes to run and the NEMO case took 131 seconds. Note that all variables are not defined in Oce3d\_MITGCM_test\_A1.nc.
+On a laptop (16Gb, 2GHz), the MITGCM test case took approximatively 6 minutes to run and the NEMO case took approximatively 1 minute. Note that all variables are not defined in Oce3d\_MITGCM_test\_A1.nc, in particular surface and sea-ice variables, while the NEMO test case includes all variables.
 
 ### Adapt to your own ocean configuration
 
@@ -128,13 +128,15 @@ _Exemple_:
 
 To put the MISOMIP2 standard attributes to the xarray dataset that will be saved as netcdf:
 
-### misomip2.preproc.add\_standard\_attributes\_oce(ds,miss=9.969209968386869e36):
+### misomip2.preproc.add\_standard\_attributes\_oce(ds,miss=9.969209968386869e36,verbose=False):
 > Define standard netcdf attributes for ocean variables that are already present in the ds xarray dataset.
 > (these variables must have the MISOMIP2 standard variable names)
 > 
 >    ds: xarray ocean dataset
 >
 >    miss: missing value (default=9.969209968386869e36)
+>
+>    verbose: True or False
 >
 _Example_:
 ```bash
