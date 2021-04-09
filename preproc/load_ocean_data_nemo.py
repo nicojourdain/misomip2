@@ -6,6 +6,7 @@ import xarray as xr
 import gsw
 from .def_grids import grid_bounds_oce
 from .def_attrs import rename_dimensions
+from datetime import datetime
 
 #====================================================================================
 def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
@@ -46,6 +47,8 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
        ds = load_oce_mod_nemo(files_gridT=fT,files_gridU=fU,files_gridV=fV,files_SBC=fS,files_ice=fI,files_BSF=fP,rho0=1028.0,teos10=True,region='Weddell')
 
    """
+
+   startTime = datetime.now()
 
    RT = 6.371e6 # Earth radius in meters
 
@@ -482,6 +485,8 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
       "original_maxlon": domain_maxlon
       },
    )
+
+   print('  Load duration: ',datetime.now() - startTime)
 
    return ds
 
