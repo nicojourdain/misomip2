@@ -6,6 +6,7 @@ import xarray as xr
 import gsw
 from pyproj import Proj
 from .def_grids import grid_bounds_oce
+from datetime import datetime
 
 #====================================================================================
 def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
@@ -44,6 +45,8 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
 
    """
 
+   startTime = datetime.now()
+
    # if only files_T are specified, use it for all variables:
    if ( files_S == 'dummy' ):
       files_S = files_T
@@ -72,7 +75,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
 
    # longitude & latitude on U, V, T grids
    if ( ( ncM.XC.min() < -180.1 ) | ( ncM.XC.max() > 360.1 ) ):
-      print('!!! Assuming that (XC,YC) are stereographic coordinates (EPSG:3031) !!!')
+      print('    !!! Assuming that (XC,YC) are stereographic coordinates (EPSG:3031) !!!')
       p = Proj('+init=EPSG:3031')
       XC2d, YC2d = np.meshgrid( ncM.XC.values, ncM.YC.values )
       XG2d, YG2d = np.meshgrid( ncM.XG.values, ncM.YG.values )
@@ -86,7 +89,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
       lonV = xr.DataArray( lons, dims=['YG', 'XC'] )
       latV = xr.DataArray( lats, dims=['YG', 'XC'] )
    else:
-      print('!!! Assuming that (XC,YC) are (longitude,latitude) !!!')
+      print('    !!! Assuming that (XC,YC) are (longitude,latitude) !!!')
       lonT = ncM.XC
       latT = ncM.YC
       lonU = ncM.XG
@@ -117,8 +120,8 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    thetaT = np.arcsin( RT*dlatTdy*np.pi/180. / dxT  )
    thetaU = np.arcsin( RT*dlatUdy*np.pi/180. / dxU  )
    thetaV = np.arcsin( RT*dlatVdy*np.pi/180. / dxV  )
-   print('Minimum local grid angle in degrees w.r.t. (zonal,meridional):',thetaU.min().values*180./np.pi)
-   print('Maximum local grid angle in degrees w.r.t. (zonal,meridional):',thetaU.max().values*180./np.pi)
+   print('    Minimum local grid angle in degrees w.r.t. (zonal,meridional):',thetaU.min().values*180./np.pi)
+   print('    Maximum local grid angle in degrees w.r.t. (zonal,meridional):',thetaU.max().values*180./np.pi)
 
    [mz, my, mx] = ncM.hFacC.shape
 
@@ -129,6 +132,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    DOMMSKT = xr.DataArray( halonan, dims=['YC', 'XC'] )
    DOMMSKU = xr.DataArray( halonan, dims=['YC', 'XG'] )
    DOMMSKV = xr.DataArray( halonan, dims=['YG', 'XC'] )
+   del halonan
 
    # Ocean fraction at each level on U, V, C/T grids:
    LEVOFT = ncM.hFacC*100.0 # (=100 if ocean, =0 elsewhere)
@@ -137,15 +141,17 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
 
    # ice-shelf fraction:
    SFTFLI = LEVOFT.max('Z').where( (LEVOFT.max('Z')>1.0) & (LEVOFT.isel(Z=0)<1.0), 0.0 )
-   print('max/min SFTFLI : ',SFTFLI.max().values, SFTFLI.min().values)
 
    # Bathymetry (including under ice shelves) [m, positive]
-   if ( "Depth" in ncM.data_vars ):
-     DEPTHO = ncM.Depth
+   if ( "Depthxx" in ncM.data_vars ):
+     DEPTHO = ncM.Depthxx
    else:
-     print('@@@@@ WARNING @@@@@   No data found for DEPTHO  -->  filled with NaNs')
-     DEPTHO = xr.DataArray( np.zeros((my,mx))*np.nan, dims=['YC', 'XC'] )
-  
+     dz=xr.DataArray( ncM.Zl.values-ncM.Zu.values, dims=['Z'] )
+     tsp=dz*ncM.hFacC
+     trq = tsp.cumsum('Z')
+     newhFacC = ncM.hFacC.where( trq > 0.01, 1.e0 ) # =1 in ice-shelf and ocean cells =0 in bedrock cells
+     DEPTHO = dz.dot(newhFacC)
+
    # Depth of ice shelf draft [m]:
    if ( "isfdraft" in ncM.data_vars ):
      DEPFLI = ncM.isfdraft
@@ -160,15 +166,11 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    elif ( "ice_shelf_draft" in ncT.data_vars ):
      DEPFLI = ncT.ice_shelf_draft
    else:
-     [IndIS_y,IndIS_x] = np.where( ( ncM.hFacC.isel(Z=0).values == 0. ) & ( ncM.hFacC.sum('Z').values > 1. ) )
-     dz = ncM.Zl.values - ncM.Zu.values
-     ISdraft = np.zeros((my,mx))
-     for i in range(np.size(IndIS_x)):
-       Ind_firstnonempty = np.where((ncM.hFacC.values[:,IndIS_y[i],IndIS_x[i]])>0)[0][0]
-       ISdraft[IndIS_y[i],IndIS_x[i]] = ncM.Zl.values[Ind_firstnonempty]-ncM.hFacC.values[Ind_firstnonempty,IndIS_y[i],IndIS_x[i]]*dz[Ind_firstnonempty]
-     DEPFLI = xr.DataArray( -ISdraft, dims=['YC', 'XC'] )
- 
+     dz = xr.DataArray( ncM.Zl.values-ncM.Zu.values, dims=['Z'] )
+     DEPFLI = DEPTHO - dz.dot(ncM.hFacC) 
+
    # ocean temperature [degC]
+   isTT=True
    if ( "toce" in ncT.data_vars ):
      TT = ncT.toce
    elif ( "thetao" in ncT.data_vars ):
@@ -178,10 +180,12 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    elif ( "T" in ncT.data_vars ):
      TT = ncT.T
    else:
-     print('@@@@@ WARNING @@@@@   No data found for TT  -->  filled with NaNs')
+     isTT=False
+     print('    @@@@@ WARNING @@@@@   No data found for TT  -->  filled with NaNs')
      TT = xr.DataArray( np.zeros((mtime,mz,my,mx))*np.nan, dims=['time', 'Z', 'YC', 'XC'] )
 
    # ocean salinity [1.e-3]
+   isSS=True
    if ( "soce" in ncS.data_vars ):
      SS = ncS.soce
    elif ( "so" in ncS.data_vars ):
@@ -191,29 +195,40 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    elif ( "S" in ncS.data_vars ):
      SS = ncS.S
    else:
-     print('@@@@@ WARNING @@@@@   No data found for SS  -->  filled with NaNs')
+     isSS=False
+     print('    @@@@@ WARNING @@@@@   No data found for SS  -->  filled with NaNs')
      SS = xr.DataArray( np.zeros((mtime,mz,my,mx))*np.nan, dims=['time', 'Z', 'YC', 'XC'] )
 
    # sea bottom ocean temperature [degC]
    if ( "sbt" in ncT.data_vars ):
      TTB = ncT.sbt
-   elif ( "sosbt" in ncT.data_vars ):
-     TTB = ncT.sosbt
    elif ( "tob" in ncT.data_vars ):
      TTB = ncT.tob
+   elif ( isTT ):
+     minval=ncM.hFacC.where( ncM.hFacC != 0. ).min().values # minimum non-zero sea fraction (e.g. 0.05)
+     trq = ncM.hFacC[::-1,:,:].where( ncM.hFacC[::-1,:,:] >= minval )*0.+1.
+     tsp = trq.cumsum('Z',skipna=True)
+     trq = tsp.where( tsp==1. )
+     tsp = TT[:,::-1,:,:]*trq
+     TTB = tsp.sum('Z',skipna=True)
    else:
-     print('@@@@@ WARNING @@@@@   No data found for TTB  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for TTB  -->  filled with NaNs')
      TTB = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # sea bottom ocean salinity [1.e-3]
    if ( "sbs" in ncT.data_vars ):
      SSB = ncT.sbs
-   elif ( "sosbs" in ncT.data_vars ):
-     SSB = ncT.sosbs
    elif ( "sob" in ncT.data_vars ):
      SSB = ncT.sob
+   elif (isSS ):
+     minval=ncM.hFacC.where( ncM.hFacC != 0. ).min().values # minimum non-zero sea fraction (e.g. 0.05)
+     trq = ncM.hFacC[::-1,:,:].where( ncM.hFacC[::-1,:,:] >= minval )*0.+1.
+     tsp = trq.cumsum('Z',skipna=True)
+     trq = tsp.where( tsp==1. )
+     tsp = SS[:,::-1,:,:]*trq
+     SSB = tsp.sum('Z',skipna=True)
    else:
-     print('@@@@@ WARNING @@@@@   No data found for SSB  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for SSB  -->  filled with NaNs')
      SSB = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # ocean potential temperature and practical salinity :
@@ -227,7 +242,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
      SOB = SSB
      THETAO = TT
      SO = SS
-   
+
    # ocean x-ward velocity [m s-1]
    if ( "uoce" in ncU.data_vars ):
      UX = ncU.uoce
@@ -238,7 +253,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    elif ( "U" in ncU.data_vars ):
      UX = ncU.U
    else:
-     print('@@@@@ WARNING @@@@@   No data found for UX  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for UX  -->  filled with NaNs')
      UX = xr.DataArray( np.zeros((mtime,mz,my,mx))*np.nan, dims=['time', 'Z', 'YC', 'XG'] )
 
    # ocean y-ward velocity [m s-1]
@@ -251,7 +266,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    elif ( "V" in ncV.data_vars ):
      VY = ncV.V
    else:
-     print('@@@@@ WARNING @@@@@   No data found for VY  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for VY  -->  filled with NaNs')
      VY = xr.DataArray( np.zeros((mtime,mz,my,mx))*np.nan, dims=['time', 'Z', 'YG', 'XC'] )
 
    # surface stress received by the ocean along x [W m-1]
@@ -260,7 +275,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    elif ( "TAUX" in ncU.data_vars ):
      TAUX = ncU.TAUX
    else:
-     print('@@@@@ WARNING @@@@@   No data found for TAUX  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for TAUX  -->  filled with NaNs')
      TAUX = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XG'] )
 
    # surface stress received by the ocean along x [W m-1]
@@ -269,20 +284,20 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    elif ( "TAUY" in ncV.data_vars ):
      TAUY = ncV.TAUY
    else:
-     print('@@@@@ WARNING @@@@@   No data found for TAUY  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for TAUY  -->  filled with NaNs')
      TAUY = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YG', 'XC'] )
 
    # Sea surface height [m]
-   if ( "zos" in ncT.data_vars ):
-     ZOS = ncT.zos
+   if ( "ETAN" in ncT.data_vars ):
+     ZOS = ncT.ETAN
    elif ( "SSH" in ncT.data_vars ):
      ZOS = ncT.SSH
    elif ( "ssh" in ncT.data_vars ):
      ZOS = ncT.ssh
-   elif ( "ETAN" in ncT.data_vars ):
-     ZOS = ncT.ETAN
+   elif ( "zos" in ncT.data_vars ):
+     ZOS = ncT.zos
    else:
-     print('@@@@@ WARNING @@@@@   No data found for ZOS  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for ZOS  -->  filled with NaNs')
      ZOS = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # mass barotropic streamfunction
@@ -290,43 +305,35 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    if ( "sobarstf" in ncU.data_vars ):
      MSFTBAROT = ncU.sobarstf * rho0
    else:
-     print('@@@@@ WARNING @@@@@   No data found for MSFTBAROT  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for MSFTBAROT  -->  filled with NaNs')
      MSFTBAROT = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # ice shelf melt [kg m-2 s-1, positive for actual melting] :
-   if ( "fwfisf" in ncT.data_vars ):
-     FICESHELF = ncT.fwfisf*(-1)
-   elif ( "SHIfwFlx" in ncT.data_vars ):
+   if ( "SHIfwFlx" in ncT.data_vars ):
      FICESHELF = ncT.SHIfwFlx*(-1)
    else:
-     print('@@@@@ WARNING @@@@@   No data found for FICESHELF  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for FICESHELF  -->  filled with NaNs')
      FICESHELF = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # ice shelf dynamical driving (heat exchange velocity) [m s-1]:
-   if ( "isfgammat" in ncT.data_vars ):
-     DYDRFLI = ncT.isfgammat
-   elif ( "sogammat_cav" in ncT.data_vars ):
-     DYDRFLI = ncT.sogammat_cav
+   if ( "SHIgammT" in ncT.data_vars ):
+     DYDRFLI = ncT.SHIgammT
    else:
-     print('@@@@@ WARNING @@@@@   No data found for DYDRFLI  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for DYDRFLI  -->  filled with NaNs')
      DYDRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # ice shelf thermal driving [degC]:
-   if ( "isfthermdr" in ncT.data_vars ):
-     THDRFLI = ncT.isfthermdr
-   elif ( "thermald_cav" in ncT.data_vars ):
-     THDRFLI = ncT.thermald_cav
+   if ( "SHIThDr" in ncT.data_vars ):
+     THDRFLI = ncT.SHIThDr
    else:
-     print('@@@@@ WARNING @@@@@   No data found for THDRFLI  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for THDRFLI  -->  filled with NaNs')
      THDRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # ice shelf haline driving [0.001]:
-   if ( "isfhalindr" in ncT.data_vars ):
-     HADRFLI = ncT.isfhalindr
-   elif ( "halined_cav" in ncT.data_vars ):
-     HADRFLI = ncT.halined_cav
+   if ( "SHIHaDR" in ncT.data_vars ):
+     HADRFLI = ncT.SHIHaDr
    else:
-     print('@@@@@ WARNING @@@@@   No data found for HADRFLI  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for HADRFLI  -->  filled with NaNs')
      HADRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # sea-ice concentration [0-100]
@@ -334,7 +341,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
      SICONC = ncI.siconc*100.0
      SICONC = SICONC.where( (~np.isnan(SICONC.values)) & (~np.isinf(SICONC.values)), 0.e0 )
    else:
-     print('@@@@@ WARNING @@@@@   No data found for SICONC  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for SICONC  -->  filled with NaNs')
      SICONC = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )   
 
    # sea-ice volume per area [m]
@@ -343,7 +350,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    elif ( "sivol" in ncI.data_vars ):
      SIVOL = ncI.sivol
    else:
-     print('@@@@@ WARNING @@@@@   No data found for SIVOL  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for SIVOL  -->  filled with NaNs')
      SIVOL = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # sea-ice x-ward velocity [m/s]
@@ -352,7 +359,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    elif ("siu" in ncI.data_vars ):
      SIUX = ncI.siu
    else:
-     print('@@@@@ WARNING @@@@@   No data found for SIUX  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for SIUX  -->  filled with NaNs')
      SIUX = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # sea-ice y-ward velocity [m/s]
@@ -361,7 +368,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    elif ("siv" in ncI.data_vars ):
      SIVY = ncI.siv
    else:
-     print('@@@@@ WARNING @@@@@   No data found for SIUY  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for SIUY  -->  filled with NaNs')
      SIVY = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # Total heat flux received by the ocean surface (including ice-shelf/ocean interface) [W m-2] 
@@ -369,7 +376,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    if ( "qt_oce" in ncSRF.data_vars ):
      HFDS = ncSRF.qt_oce
    else:
-     print('@@@@@ WARNING @@@@@   No data found for HFDS  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for HFDS  -->  filled with NaNs')
      HFDS = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # Water flux entering the ocean due to sea-ice (melting-freezing) and surface correction (SSS restoring)
@@ -381,7 +388,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    if ( "fsitherm" in ncSRF.data_vars ):
      WFOSICOR = WFOCORR - ncSRF.fsitherm
    else:
-     print('@@@@@ WARNING @@@@@   No data found for WFOSICOR  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for WFOSICOR  -->  filled with NaNs')
      WFOSICOR = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
 
    # Water flux entering the ocean due to rainfall, snowfall, condensation - evap, 
@@ -390,7 +397,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    if ( "empmr" in ncSRF.data_vars ):
      WFOATRLI = - ncSRF.empmr + FICESHELF
    else:
-     print('@@@@@ WARNING @@@@@   No data found for WFOATRLI  -->  filled with NaNs')
+     print('    @@@@@ WARNING @@@@@   No data found for WFOATRLI  -->  filled with NaNs')
      WFOATRLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'YC', 'XC'] )
   
    #----------
@@ -429,7 +436,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
         jmax=jj
         break
 
-   print('Reducing domain size to useful area, i.e.: ',[imin,imax,jmin,jmax])
+   print('    Reducing domain size to useful area, i.e.: ',[imin,imax,jmin,jmax])
 
    #----------
    # Create new xarray dataset including all useful variables:
@@ -492,6 +499,8 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
       "original_maxlon": domain_maxlon
       },
    )
+
+   print('    Load duration: ',datetime.now() - startTime)
 
    return ds
 
