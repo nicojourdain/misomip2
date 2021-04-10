@@ -173,9 +173,9 @@ theV = mp.horizontal_interp( latV, lonV, mlat, mlon, lat_miso1d, lon_miso1d, oce
 SFTFLI_miso = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, oce.SFTFLI )
 SFTFLI_miso[ np.isnan(DOMMSK_miso) ] = np.nan # will update to missval at the end of the calculation
 
-# Depth of floating ice on MISOMIP grid (ice-shelf draft) (=nan where no ice shelf or beyond model domain)
+# Depth of floating ice on MISOMIP grid (ice-shelf draft)
 DEPFLI_miso = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, oce.DEPFLI, weight=oce.SFTFLI*oce.DOMMSKT, skipna=True, filnocvx=True, threshold=epsfr )
-DEPFLI_miso[ np.isnan(DOMMSK_miso) | np.isnan(DEPFLI_miso) ] = missval
+DEPFLI_miso[ np.isnan(DOMMSK_miso) | np.isnan(DEPFLI_miso) ] = 0.e0  # will be replaced with missval later on
 
 # Ocean depth on MISOMIP grid (=nan where land or grounded ice or beyond model domain)
 DEPTHO_miso = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, oce.DEPTHO, weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr )
@@ -198,12 +198,14 @@ for kk in np.arange(mdep):
   tmp_LEVT[kk,:] = tmp_OC # =LEVOF innterpolated vertically but not horizontally
   tzz = mp.horizontal_interp( latT, lonT, mlat, mlon, lat_miso1d, lon_miso1d, tmp_OC )
   tzz[ np.isnan(DOMMSK_miso) ] = np.nan # will update to missval at the end of the calculation
-  tzz[ (DEPTHO_miso<dep_miso[kk]) ]=0.0 # criteria on DEPTHO_miso to account for partial step if needed.
+  tzz[ (dep_miso[kk]>DEPTHO_miso) | (dep_miso[kk]<DEPFLI_miso) ]=0.0 # criteria to account for partial steps if any
   LEVOF_miso[kk,:,:] = tzz # saved to netcdf
   tmp_OC = ( LEVOFU.isel(z=kinf[kk]) * tmpaT + LEVOFU.isel(z=ksup[kk]) * tmpbT ) / tmpxT
   tmp_LEVU[kk,:] = tmp_OC
   tmp_OC = ( LEVOFV.isel(z=kinf[kk]) * tmpaT + LEVOFV.isel(z=ksup[kk]) * tmpbT ) / tmpxT
   tmp_LEVV[kk,:] = tmp_OC
+
+DEPFLI_miso[ DEPFLI_miso==0.e0 ] = missval
 
 #----- interpolation of time-varying fields:
 
@@ -456,6 +458,12 @@ DOMMSK_sect = np.squeeze(mp.horizontal_interp( latT, lonT, mlonlatsec, 1, lat_se
 
 domcond = ( np.isnan(DOMMSK_sect) )
 
+# Depth of floating ice on MISOMIP grid (ice-shelf draft)
+DEPFLI_sect = np.squeeze( mp.horizontal_interp( latT, lonT, mlonlatsec, 1, lat_sect1d, lon_sect1d, oce.DEPFLI.where(cond_secT,drop=True), \
+                                                weight=oce.SFTFLI.where(cond_secT,drop=True)*oce.DOMMSKT.where(cond_secT,drop=True), \
+                                                skipna=True, filnocvx=True, threshold=epsfr ) )
+DEPFLI_sect[ np.isnan(DOMMSK_sect) | np.isnan(DEPFLI_sect) ] = 0.e0 # will be replaced with missval later on
+
 # Ocean depth on MISOMIP grid (=nan where land or grounded ice or beyond model domain)
 DEPTHO_sect = np.squeeze( mp.horizontal_interp( latT, lonT, mlonlatsec, 1, lat_sect1d, lon_sect1d, oce.DEPTHO.where(cond_secT,drop=True), \
                                                 weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr ))
@@ -476,8 +484,10 @@ for kk in np.arange(mdepsect):
   tmp_LEVT[kk,:] = tmp_OC # LEVOF innterpolated vertically but not horizontally
   tzz = np.squeeze(mp.horizontal_interp( latT, lonT, mlonlatsec, 1, lat_sect1d, lon_sect1d, tmp_OC ))
   tzz[ domcond ] = missval
-  tzz[ (DEPTHO_sect>dep_sect[kk]) ]=0.0 # criteria on DEPTHO_sect to account for partial step if needed.
+  tzz[ (dep_sect[kk]>DEPTHO_sect) | (dep_sect[kk]<DEPFLI_sect) ]=0.0 # criteria to account for partial steps if needed.
   LEVOF_sect[kk,:] = tzz
+
+DEPFLI_sect[ DEPFLI_sect==0.e0 ] = missval
 
 SO_sect     = np.zeros((mtime,mdepsect,mlonlatsec)) + missval
 THETAO_sect = np.zeros((mtime,mdepsect,mlonlatsec)) + missval
@@ -572,6 +582,12 @@ mtime = np.shape(oce.SO)[0]
 # mask showing the original domain (nan where interpolation of any of T, U, V grid is nan):
 DOMMSK_moor = np.squeeze(mp.horizontal_interp( latT, lonT, 1, 1, lat_moor0d, lon_moor0d, oce.DOMMSKT.where(cond_mooT,drop=True) ))
 
+# Depth of floating ice on MISOMIP grid (ice-shelf draft)
+DEPFLI_moor = np.squeeze( mp.horizontal_interp( latT, lonT, 1, 1, lat_moor0d, lon_moor0d, oce.DEPFLI.where(cond_mooT,drop=True), \
+                                                weight=oce.SFTFLI.where(cond_mooT,drop=True)*oce.DOMMSKT.where(cond_mooT,drop=True), \
+                                                skipna=True, filnocvx=True, threshold=epsfr ) )
+DEPFLI_moor[ np.isnan(DOMMSK_moor) | np.isnan(DEPFLI_moor) ] = 0.e0 # will be replaced will missval later on
+
 # Ocean depth on MISOMIP grid (=nan where land or grounded ice or beyond model domain)
 DEPTHO_moor = np.squeeze(mp.horizontal_interp( latT, lonT, 1, 1, lat_moor0d, lon_moor0d, oce.DEPTHO.where(cond_mooT,drop=True), \
                                                weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr ) )
@@ -593,10 +609,12 @@ for kk in np.arange(mdepmoor):
   tzz = np.squeeze(mp.horizontal_interp( latT, lonT, 1, 1, lat_moor0d, lon_moor0d, tmp_OC ))
   if ( np.isnan(DOMMSK_moor) ):
      tzz = missval
-  tzz[ (DEPTHO_moor<dep_moor[kk]) ]=0.0 # criteria on DEPTHO_moor to account for partial step if needed.
+  tzz[ (dep_moor[kk]>DEPTHO_moor) | (dep_moor[kk]<DEPFLI_moor) ]=0.0 # criteria to account for partial steps if any.
   LEVOF_moor[kk] = tzz
 LEVOF_moor[ LEVOF_moor < epsfr ] = 0.e0
 tmp_LEVT[ tmp_LEVT < epsfr ] = 0.e0
+
+DEPFLI_moor[ DEPFLI_moor==0.e0 ] = missval
 
 SO_moor     = np.zeros((mtime,mdepmoor)) + missval
 THETAO_moor = np.zeros((mtime,mdepmoor)) + missval
