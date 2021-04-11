@@ -44,16 +44,16 @@ We provide a test case so that users can check that this package works well in t
 
 ### Ocean test cases 
 
-We provide 2 months of raw outputs from NEMO and MITGCM (Amundsen Sea configurations) in ```misomip2/examples/models/oce/```. To interpolate these model outputs to the standard MISOMIP2 grids, edit **interpolate_to_common_grid_oce.py** and edit the path where you cloned the misomip2 github repository (currently ```sys.path.append("/Users/jourdain/MY_SCRIPTS")```), which allows you to run it from anywhere, then select ```model='MITGCM_test'``` (you can try ```model='NEMO_test'``` just after). Execute it as:
+We provide 2 months of raw outputs from NEMO and MITGCM (Amundsen Sea configurations) in ```misomip2/examples/models/oce/```. To interpolate these model outputs to the standard MISOMIP2 grids, edit **interpolate_to_common_grid_oce.py** and edit the path where you cloned the misomip2 github repository (currently ```sys.path.append("/Users/jourdain/MY_SCRIPTS")```), which allows you to run it from anywhere, then select ```model='NEMO_test'``` (you can try ```model='MITGCM_test'``` just after). Execute it as:
 ```bash
 python interpolate_to_common_grid_oce.py
 ```
 This should create the following files:
-* Oce3d\_MITGCM_test\_A1.nc
-* OceMoor\_MITGCM\_test_A1.nc
-* OceSec\_MITGCM\_test\_A1.nc
+* Oce3d\_NEMO_test\_A1.nc
+* OceMoor\_NEMO\_test_A1.nc
+* OceSec\_NEMO\_test\_A1.nc
 
-On a laptop (16Gb, 2GHz), the MITGCM test case took approximatively 6 minutes to run and the NEMO case took approximatively 1 minute. Note that all variables are not defined in Oce3d\_MITGCM_test\_A1.nc, in particular surface and sea-ice variables, while the NEMO test case includes all variables.
+On a laptop (16Gb, 2GHz), the NEMO test case took approximatively 1 minute to run and the MITGCM case took approximatively 5 minute. Note that the test cases do not cover the entire MISOMIP2 domain and that all variables are not defined in Oce3d\_MITGCM_test\_A1.nc, in particular surface and sea-ice variables, while the NEMO test case includes all variables.
 
 ### Adapt to your own ocean configuration
 

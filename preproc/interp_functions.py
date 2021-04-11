@@ -107,7 +107,7 @@ def horizontal_interp( lat_in_1d, lon_in_1d, mlat_misomip, mlon_misomip, lat_out
          txxxx = interpolate.griddata( (lon_in_1d_nonan,lat_in_1d_nonan), var1d_nonan, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
        else:
          wgt1d_nonan = weight[ (~np.isnan(var_in_1d)) & (~np.isinf(var_in_1d)) ]
-         wgt1d_nonan[ np.isnan(wgt1d_nonan) ] = 0.e0 # if nan in mask but not in input data
+         wgt1d_nonan[ np.isnan(wgt1d_nonan) | np.isinf(wgt1d_nonan) ] = 0.e0 # if nan in mask but not in input data
          txxxx = interpolate.griddata( (lon_in_1d_nonan,lat_in_1d_nonan), var1d_nonan*wgt1d_nonan, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
          wgt   = interpolate.griddata( (lon_in_1d_nonan,lat_in_1d_nonan), wgt1d_nonan, (lon_out_1d,lat_out_1d), method='linear', fill_value=np.nan )
          txxxx = txxxx / wgt
@@ -122,7 +122,10 @@ def horizontal_interp( lat_in_1d, lon_in_1d, mlat_misomip, mlon_misomip, lat_out
            tmplon=lon_in_1d_nonan[ wgt1d_nonan >= threshold ]
            tmplat=lat_in_1d_nonan[ wgt1d_nonan >= threshold ]
            tmpvar=var1d_nonan[ wgt1d_nonan >= threshold ]
-           tssss = interpolate.griddata( (tmplon,tmplat), tmpvar, (lon_out_1d,lat_out_1d), method='nearest' )
+           if ( np.size(tmpvar) == 0 ):
+             tssss = np.zeros((mlat_misomip*mlon_misomip)) * np.nan
+           else:
+             tssss = interpolate.griddata( (tmplon,tmplat), tmpvar, (lon_out_1d,lat_out_1d), method='nearest' )
          tmp   = np.reshape( tssss, (mlat_misomip, mlon_misomip) )
          out[ (np.isnan(out)) | (np.isinf(out)) ] = tmp[ (np.isnan(out)) | (np.isinf(out)) ] # points out of the convex area
          out[ out == miss ] = np.nan # points with weight below threshold

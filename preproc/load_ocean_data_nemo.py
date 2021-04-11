@@ -476,7 +476,8 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
        "depTUV":    (['z'], depTUV.values)
       },
       coords={
-      "time": ncT.time.values
+      "time": ncT.time.values,
+      "z": depTUV.values
       },
       attrs={
       "original_minlat": domain_minlat,

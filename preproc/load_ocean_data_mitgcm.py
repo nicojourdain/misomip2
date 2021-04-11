@@ -72,6 +72,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    ncM = xr.open_mfdataset(files_M,decode_coords=False)
 
    mtime = ncT.time.shape[0]
+   print(ncT.time)
 
    # longitude & latitude on U, V, T grids
    if ( ( ncM.XC.min() < -180.1 ) | ( ncM.XC.max() > 360.1 ) ):
@@ -490,7 +491,8 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
        "depTUV":    (['z'], depTUV.values)
       },
       coords={
-      "time": ncT.time.values
+      "time": ncT.time.values,
+      "z": depTUV.values
       },
       attrs={
       "original_minlat": domain_minlat,
@@ -504,4 +506,4 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
 
    return ds
 
- 
+

@@ -14,21 +14,21 @@ def add_standard_attributes_oce(ds,miss=9.969209968386869e36,verbose=False):
 
   if ( "longitude" in ds.coords ):
     if verbose: print('define attributes for coordinate longitude')
-    ds.longitude.encoding['_FillValue'] = False
+    ds.longitude.encoding['_FillValue'] = None
     ds.longitude.attrs['units'] = 'degrees_east'
     ds.longitude.attrs['long_name'] = 'longitude'
     ds.longitude.attrs['standard_name'] = 'longitude'
 
   if ( "latitude" in ds.coords ):
     if verbose: print('define attributes for coordinate latitude')
-    ds.latitude.encoding['_FillValue'] = False
+    ds.latitude.encoding['_FillValue'] = None
     ds.latitude.attrs['units'] = 'degrees_north'
     ds.latitude.attrs['long_name'] = 'latitude'
     ds.latitude.attrs['standard_name'] = 'latitude'
 
   if ( "depth" in ds.coords ):
     if verbose: print('define attributes for coordinate depth')
-    ds.depth.encoding['_FillValue'] = False
+    ds.depth.encoding['_FillValue'] = None
     ds.depth.attrs['units'] = 'm'
     ds.depth.attrs['positive'] = 'down'
     ds.depth.attrs['long_name'] = 'depth'
@@ -37,7 +37,7 @@ def add_standard_attributes_oce(ds,miss=9.969209968386869e36,verbose=False):
   if ( "time" in ds.coords ):
     if verbose: print('define attributes for coordinate time')
     ds.time.encoding['units'] = 'days since 1900-01-01'
-    ds.time.encoding['_FillValue'] = False
+    ds.time.encoding['_FillValue'] = None
     ds.time.attrs['standard_name'] = 'time'
 
 
