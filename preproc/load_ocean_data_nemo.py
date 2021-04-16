@@ -378,10 +378,11 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    # Reduce the size of ocean dataset
  
    [lonmin,lonmax,latmin,latmax] = grid_bounds_oce(region=region)
-   lonmin=lonmin-1.1 # take a bit more for interpolation
-   lonmax=lonmax+1.1
-   latmin=latmin-1.1
-   latmax=latmax+1.1
+   wdeg = 1.5 * np.max([dxT.where(latT <= latmax).max(),dyT.where(latT <= latmax).max()]) / 6.37e6 * 180. / np.pi / np.cos(0.5*(latmin+latmax)*np.pi/180.)
+   lonmin=lonmin - wdeg # take a bit more for interpolation
+   lonmax=lonmax + wdeg
+   latmin=latmin - wdeg
+   latmax=latmax + wdeg
 
    condT2d = ( (latT >= latmin) & (latT <= latmax) & (lonT >= lonmin) & (lonT <= lonmax) )
 

@@ -330,10 +330,11 @@ def load_oce_mod_roms(files_T='ROMS_all.nc',\
    # Reduce the size of ocean dataset
  
    [lonmin,lonmax,latmin,latmax] = grid_bounds_oce(region=region)
-   lonmin=lonmin-0.5 # take a bit more for interpolation
-   lonmax=lonmax+0.5
-   latmin=latmin-0.5
-   latmax=latmax+0.5
+   wdeg = 1.5 * np.max([dxT.where(latT <= latmax).max(),dyT.where(latT <= latmax).max()]) / 6.37e6 * 180. / np.pi / np.cos(0.5*(latmin+latmax)*np.pi/180.)
+   lonmin=lonmin - wdeg # take a bit more for interpolation
+   lonmax=lonmax + wdeg
+   latmin=latmin - wdeg
+   latmax=latmax + wdeg
 
    condT2d = ( (latT >= latmin) & (latT <= latmax) & (lonT >= lonmin) & (lonT <= lonmax) )
 
