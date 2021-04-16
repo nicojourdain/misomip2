@@ -133,7 +133,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "bathy_meter" in ncB.data_vars ):
      DEPTHO = ncB.bathy_meter
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for DEPTHO  -->  filled with NaNs')
+     print('    WARNING :   No data found for DEPTHO  -->  filled with NaNs')
      DEPTHO = xr.DataArray( np.zeros((my,mx))*np.nan, dims=['y', 'x'] )
   
    # Depth of ice shelf draft (if possible after NEMO's initialization, i.e. from mesh_mask) [m]:
@@ -142,7 +142,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "isfdraft" in ncB.data_vars ):
      DEPFLI = ncB.isfdraft
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for DEPFLI  -->  filled with NaNs')
+     print('    WARNING :   No data found for DEPFLI  -->  filled with NaNs')
      DEPFLI = xr.DataArray( np.zeros((my,mx))*np.nan, dims=['y', 'x'] )
  
    # ocean temperature [degC]
@@ -153,7 +153,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "votemper" in ncT.data_vars ):
      TT = ncT.votemper
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for TT  -->  filled with NaNs')
+     print('    WARNING :   No data found for TT  -->  filled with NaNs')
      TT = xr.DataArray( np.zeros((mtime,mz,my,mx))*np.nan, dims=['time', 'z', 'y', 'x'] )
 
    # ocean salinity [1.e-3]
@@ -164,7 +164,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "vosaline" in ncT.data_vars ):
      SS = ncT.vosaline
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for SS  -->  filled with NaNs')
+     print('    WARNING :   No data found for SS  -->  filled with NaNs')
      SS = xr.DataArray( np.zeros((mtime,mz,my,mx))*np.nan, dims=['time', 'z', 'y', 'x'] )
 
    # sea bottom ocean temperature [degC]
@@ -175,7 +175,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "tob" in ncT.data_vars ):
      TTB = ncT.tob
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for TTB  -->  filled with NaNs')
+     print('    WARNING :   No data found for TTB  -->  filled with NaNs')
      TTB = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # sea bottom ocean salinity [1.e-3]
@@ -186,7 +186,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "sob" in ncT.data_vars ):
      SSB = ncT.sob
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for SSB  -->  filled with NaNs')
+     print('    WARNING :   No data found for SSB  -->  filled with NaNs')
      SSB = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # ocean potential temperature and practical salinity :
@@ -209,7 +209,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "uo" in ncU.data_vars ):
      UX = ncU.uo
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for UX  -->  filled with NaNs')
+     print('    WARNING :   No data found for UX  -->  filled with NaNs')
      UX = xr.DataArray( np.zeros((mtime,mz,my,mx))*np.nan, dims=['time', 'z', 'y', 'x'] )
 
    # ocean y-ward velocity [m s-1]
@@ -220,7 +220,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "vo" in ncV.data_vars ):
      VY = ncV.vo
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for VY  -->  filled with NaNs')
+     print('    WARNING :   No data found for VY  -->  filled with NaNs')
      VY = xr.DataArray( np.zeros((mtime,mz,my,mx))*np.nan, dims=['time', 'z', 'y', 'x'] )
 
    # surface stress received by the ocean along x [W m-1]
@@ -229,7 +229,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "sozotaux" in ncU.data_vars ):
      TAUX = ncU.sozotaux
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for TAUX  -->  filled with NaNs')
+     print('    WARNING :   No data found for TAUX  -->  filled with NaNs')
      TAUX = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # surface stress received by the ocean along x [W m-1]
@@ -238,7 +238,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "sometauy" in ncV.data_vars ):
      TAUY = ncV.sometauy
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for TAUY  -->  filled with NaNs')
+     print('    WARNING :   No data found for TAUY  -->  filled with NaNs')
      TAUY = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # Sea surface height [m]
@@ -259,7 +259,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "sossheig" in ncT.data_vars ):
      ZOS = ncT.sossheig
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for ZOS  -->  filled with NaNs')
+     print('    WARNING :   No data found for ZOS  -->  filled with NaNs')
      ZOS = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # mass barotropic streamfunction
@@ -267,7 +267,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    if ( "sobarstf" in ncP.data_vars ):
      MSFTBAROT = ncP.sobarstf * rho0
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for MSFTBAROT  -->  filled with NaNs')
+     print('    WARNING :   No data found for MSFTBAROT  -->  filled with NaNs')
      MSFTBAROT = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # ice shelf melt [kg m-2 s-1, positive for actual melting] :
@@ -276,7 +276,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "sowflisf_cav" in ncS.data_vars ):
      FICESHELF = ncS.sowflisf_cav*(-1)
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for FICESHELF  -->  filled with NaNs')
+     print('    WARNING :   No data found for FICESHELF  -->  filled with NaNs')
      FICESHELF = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # ice shelf dynamical driving (heat exchange velocity) [m s-1]:
@@ -285,7 +285,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "sogammat_cav" in ncS.data_vars ):
      DYDRFLI = ncS.sogammat_cav
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for DYDRFLI  -->  filled with NaNs')
+     print('    WARNING :   No data found for DYDRFLI  -->  filled with NaNs')
      DYDRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] ) 
 
    # ice shelf thermal driving [degC]:
@@ -294,7 +294,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "thermald_cav" in ncS.data_vars ):
      THDRFLI = ncS.thermald_cav
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for THDRFLI  -->  filled with NaNs')
+     print('    WARNING :   No data found for THDRFLI  -->  filled with NaNs')
      THDRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # ice shelf haline driving [0.001]:
@@ -303,7 +303,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "halined_cav" in ncS.data_vars ):
      HADRFLI = ncS.halined_cav
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for HADRFLI  -->  filled with NaNs')
+     print('    WARNING :   No data found for HADRFLI  -->  filled with NaNs')
      HADRFLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # sea-ice concentration [0-100]
@@ -311,7 +311,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
      SICONC = ncI.siconc*100.0
      SICONC = SICONC.where( (~np.isnan(SICONC.values)) & (~np.isinf(SICONC.values)), 0.e0 )
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for SICONC  -->  filled with NaNs')
+     print('    WARNING :   No data found for SICONC  -->  filled with NaNs')
      SICONC = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )   
 
    # sea-ice volume per area [m]
@@ -320,7 +320,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "sivol" in ncI.data_vars ):
      SIVOL = ncI.sivol
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for SIVOL  -->  filled with NaNs')
+     print('    WARNING :   No data found for SIVOL  -->  filled with NaNs')
      SIVOL = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # sea-ice x-ward velocity [m/s]
@@ -329,7 +329,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ("siu" in ncI.data_vars ):
      SIUX = ncI.siu
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for SIUX  -->  filled with NaNs')
+     print('    WARNING :   No data found for SIUX  -->  filled with NaNs')
      SIUX = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # sea-ice y-ward velocity [m/s]
@@ -338,7 +338,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ("siv" in ncI.data_vars ):
      SIVY = ncI.siv
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for SIUY  -->  filled with NaNs')
+     print('    WARNING :   No data found for SIUY  -->  filled with NaNs')
      SIVY = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # Total heat flux received by the ocean surface (including ice-shelf/ocean interface) [W m-2] 
@@ -348,7 +348,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( ("sohefldo" in ncS.data_vars) & ("qoceisf_cav" in ncS.data_vars) ):
      HFDS = ncS.sohefldo + ncS.qoceisf_cav # not included in sohefldo in tested NEMO versions
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for HFDS  -->  filled with NaNs')
+     print('    WARNING :   No data found for HFDS  -->  filled with NaNs')
      HFDS = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # Water flux entering the ocean due to sea-ice (melting-freezing) and surface correction (SSS restoring)
@@ -360,7 +360,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( ("sowafld" in ncS.data_vars) & ("sosfldow" in ncS.data_vars) ):
      WFOSICOR = ncS.sowafld.where( (~np.isnan(ncS.sowafld.values)), 0.e0 ) - ncS.sosfldow / SS.isel(z=0)
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for WFOSICOR  -->  filled with NaNs')
+     print('    WARNING :   No data found for WFOSICOR  -->  filled with NaNs')
      WFOSICOR = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
 
    # Water flux entering the ocean due to rainfall, snowfall, condensation - evap, 
@@ -371,7 +371,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    elif ( "sowaflup" in ncS.data_vars ):
      WFOATRLI = - ncS.sowaflup - WFOSICOR + FICESHELF
    else:
-     print('    @@@@@ WARNING @@@@@   No data found for WFOATRLI  -->  filled with NaNs')
+     print('    WARNING :   No data found for WFOATRLI  -->  filled with NaNs')
      WFOATRLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
   
    #----------
