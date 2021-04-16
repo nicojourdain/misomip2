@@ -54,7 +54,7 @@ This should create the following files:
 * OceMoor\_NEMO\_test_A1.nc
 * OceSec\_NEMO\_test\_A1.nc
 
-On a laptop (16Gb, 2GHz), the NEMO test case took approximatively 1 minute to run and the MITGCM case took approximatively 5 minute. Note that the test cases do not cover the entire MISOMIP2 domain and that all variables are not defined in Oce3d\_MITGCM_test\_A1.nc, in particular surface and sea-ice variables, while the NEMO test case includes all variables.
+On a laptop (16Gb, 2GHz), the NEMO test case took approximatively 1 minute to run and the MITGCM case took approximatively 4 minutes. Note that the test cases do not cover the entire MISOMIP2 domain and that all variables are not defined in Oce3d\_MITGCM_test\_A1.nc, in particular surface and sea-ice variables, while the NEMO test case includes all variables.
 
 ### Adapt to your own ocean configuration
 

@@ -27,8 +27,8 @@ np.seterr(divide='ignore', invalid='ignore') # to avoid warning due to divide by
 # 0- General information:
 
 # Official name in MISOMIP2:
-#model='NEMO_test'
-model='MITGCM_test'
+model='NEMO_test'
+#model='MITGCM_test'
 #model='ROMS_test'
 
 reg='Amundsen' # 'Amundsen' or 'Weddell'
@@ -186,11 +186,9 @@ theV = mp.horizontal_interp( latV, lonV*aa, mlat, mlon, lat_miso1d, lon_miso1d*a
 # Ice shelf fraction on MISOMIP grid (in [0-100], =nan beyond model domain)
 SFTFLI_miso = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.SFTFLI )
 SFTFLI_miso[ np.isnan(DOMMSK_miso) ] = 0.e0 # will update to missval at the end of the calculation
-#SFTFLI_miso[ np.isnan(DOMMSK_miso) ] = np.nan # will update to missval at the end of the calculation
 
 # Depth of floating ice on MISOMIP grid (ice-shelf draft)
 DEPFLI_miso = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.DEPFLI, weight=oce.SFTFLI, skipna=True, filnocvx=True, threshold=epsfr )
-#DEPFLI_miso = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.DEPFLI, weight=oce.SFTFLI*oce.DOMMSKT, skipna=True, filnocvx=True, threshold=epsfr )
 DEPFLI_miso[ np.isnan(DOMMSK_miso) | np.isnan(DEPFLI_miso) ] = 0.e0  # will be replaced with missval later on
 
 # Ocean depth on MISOMIP grid (=nan where land or grounded ice or beyond model domain)
@@ -447,7 +445,6 @@ mdepsect = np.size(dep_sect)
 
 # Reduce input data size
 wdeg = 3. * res_73S / 6.37e6 * 180. / np.pi / aa
-print('wdeg = ', wdeg)
 lonmin_sect = np.min( lon_sect1d ) - wdeg
 lonmax_sect = np.max( lon_sect1d ) + wdeg
 latmin_sect = np.min( lat_sect1d ) - wdeg
@@ -574,7 +571,6 @@ mdepmoor = np.size(dep_moor)
 #       scipy.spatial.qhull.QhullError: QH6214 qhull input error: not enough points(1) to construct initial simplex (need 4) 
 #       If it happens with your dataset, increase it further...
 wdeg = 15. * res_73S / 6.37e6 * 180. / np.pi / aa
-print('wdeg = ', wdeg)
 lonmin_moor = np.min( lon_moor0d ) - wdeg
 lonmax_moor = np.max( lon_moor0d ) + wdeg
 latmin_moor = np.min( lat_moor0d ) - wdeg
