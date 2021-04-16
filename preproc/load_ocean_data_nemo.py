@@ -92,13 +92,13 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    dxT = ncM.e1t # grid mesh width along x-axis in meters for sea ice grid (T)
    dyT = ncM.e2t # grid mesh width along y-axis in meters for sea ice grid (T)
 
-   dlatTdx = 0.500000000 * ( latT.shift(x=1) - latT.shift(x=-1) )
-   dlatUdx = 0.500000000 * ( latU.shift(x=1) - latU.shift(x=-1) )
-   dlatVdx = 0.500000000 * ( latV.shift(x=1) - latV.shift(x=-1) )
+   dlatTdx = 0.500000000 * ( latT.shift(x=-1) - latT.shift(x=1) )
+   dlatUdx = 0.500000000 * ( latU.shift(x=-1) - latU.shift(x=1) )
+   dlatVdx = 0.500000000 * ( latV.shift(x=-1) - latV.shift(x=1) )
 
-   dlonTdx = 0.500000000 * ( lonT.shift(x=1) - lonT.shift(x=-1) )
-   dlonUdx = 0.500000000 * ( lonU.shift(x=1) - lonU.shift(x=-1) )
-   dlonVdx = 0.500000000 * ( lonV.shift(x=1) - lonV.shift(x=-1) )
+   dlonTdx = 0.500000000 * ( lonT.shift(x=-1) - lonT.shift(x=1) )
+   dlonUdx = 0.500000000 * ( lonU.shift(x=-1) - lonU.shift(x=1) )
+   dlonVdx = 0.500000000 * ( lonV.shift(x=-1) - lonV.shift(x=1) )
 
    # depth of U, V, T grids (neglecting the effects of partial steps in the interpolation)
    depTUV=ncM.gdept_1d
