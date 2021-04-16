@@ -7,6 +7,7 @@ This package is written for python3 and largely based on [xarray](http://xarray.
 * Nicolas C. Jourdain (IGE, CNRS-UGA, Grenoble, France)
 * Jan De Rydt (University Northumbria Newcastle, UK)
 * Yoshihiro Nakayama (Hokkaido University, Japan)
+* Ole Richter (Alfred Wegener Institute, Germany)
 
 All MISOMIP participants who want to contribute to this package are invited to fork this github repo and make a pull request as [documented here](https://opensource.com/article/19/7/create-pull-request-github).
 
