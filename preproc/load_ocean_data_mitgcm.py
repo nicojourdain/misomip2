@@ -61,8 +61,6 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    if ( files_M == 'dummy' ):
       files_M = files_T
 
-   RT = 6.371e6 # Earth radius in meters
-
    ncT = xr.open_mfdataset(files_T,decode_coords=False)
    ncS = xr.open_mfdataset(files_S,decode_coords=False)
    ncU = xr.open_mfdataset(files_U,decode_coords=False)
@@ -72,7 +70,6 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    ncM = xr.open_mfdataset(files_M,decode_coords=False)
 
    mtime = ncT.time.shape[0]
-   print(ncT.time)
 
    # longitude & latitude on U, V, T grids
    if ( ( ncM.XC.min() < -180.1 ) | ( ncM.XC.max() > 360.1 ) ):
@@ -107,20 +104,22 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    # grid mesh widths along x and y at C/T, U and V points [m]:
    dxT = xr.DataArray( 0.500000000 * (ncM.dxC.values+ncM.dxC.shift(XG=-1).values), dims=['YC', 'XC'] )
    dyT = xr.DataArray( 0.500000000 * (ncM.dyC.values+ncM.dyC.shift(YG=-1).values), dims=['YC', 'XC'] )
-   dxU = ncM.dxC
-   dxV = ncM.dxG
 
-   dlatTdy = 0.500000000 * ( latT.shift(XC=1) - latT.shift(XC=-1) )
-   dlatUdy = 0.500000000 * ( latU.shift(XG=1) - latU.shift(XG=-1) )
-   dlatVdy = 0.500000000 * ( latV.shift(XC=1) - latV.shift(XC=-1) )
+   dlatTdx = 0.500000000 * ( latT.shift(XC=1) - latT.shift(XC=-1) )
+   dlatUdx = 0.500000000 * ( latU.shift(XG=1) - latU.shift(XG=-1) )
+   dlatVdx = 0.500000000 * ( latV.shift(XC=1) - latV.shift(XC=-1) )
+
+   dlonTdx = 0.500000000 * ( lonT.shift(XC=1) - lonT.shift(XC=-1) ) 
+   dlonUdx = 0.500000000 * ( lonU.shift(XG=1) - lonU.shift(XG=-1) ) 
+   dlonVdx = 0.500000000 * ( lonV.shift(XC=1) - lonV.shift(XC=-1) )
 
    # depth of U, V, C/T grids (neglecting the effects of partial steps in the interpolation) [m, positive in the ocean]
    depTUV=ncM.Z*(-1) 
 
    # local C/T, U, V grid rotation angle compared to the (zonal,meridional) direction [rad]
-   thetaT = np.arcsin( RT*dlatTdy*np.pi/180. / dxT  )
-   thetaU = np.arcsin( RT*dlatUdy*np.pi/180. / dxU  )
-   thetaV = np.arcsin( RT*dlatVdy*np.pi/180. / dxV  )
+   thetaT = np.arctan2( dlatTdx, dlonTdx*np.cos(latT*np.pi/180.) )
+   thetaU = np.arctan2( dlatUdx, dlonUdx*np.cos(latU*np.pi/180.) )
+   thetaV = np.arctan2( dlatVdx, dlonVdx*np.cos(latV*np.pi/180.) )
    print('    Minimum local grid angle in degrees w.r.t. (zonal,meridional):',thetaU.min().values*180./np.pi)
    print('    Maximum local grid angle in degrees w.r.t. (zonal,meridional):',thetaU.max().values*180./np.pi)
 

@@ -91,19 +91,22 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
 
    dxT = ncM.e1t # grid mesh width along x-axis in meters for sea ice grid (T)
    dyT = ncM.e2t # grid mesh width along y-axis in meters for sea ice grid (T)
-   dxU = ncM.e1u # grid mesh width along x-axis in meters for UX
-   dxV = ncM.e1v # grid mesh width along x-axis in meters for VY
-   dlatTdy = 0.500000000 * ( latT.shift(x=1) - latT.shift(x=-1) )
-   dlatUdy = 0.500000000 * ( latU.shift(x=1) - latU.shift(x=-1) )
-   dlatVdy = 0.500000000 * ( latV.shift(x=1) - latV.shift(x=-1) )
+
+   dlatTdx = 0.500000000 * ( latT.shift(x=1) - latT.shift(x=-1) )
+   dlatUdx = 0.500000000 * ( latU.shift(x=1) - latU.shift(x=-1) )
+   dlatVdx = 0.500000000 * ( latV.shift(x=1) - latV.shift(x=-1) )
+
+   dlonTdx = 0.500000000 * ( lonT.shift(x=1) - lonT.shift(x=-1) )
+   dlonUdx = 0.500000000 * ( lonU.shift(x=1) - lonU.shift(x=-1) )
+   dlonVdx = 0.500000000 * ( lonV.shift(x=1) - lonV.shift(x=-1) )
 
    # depth of U, V, T grids (neglecting the effects of partial steps in the interpolation)
    depTUV=ncM.gdept_1d
 
    # local T, U, V grid rotation angle compared to the (zonal,meridional) direction [rad]
-   thetaT = np.arcsin( RT*dlatTdy*np.pi/180. / dxT  )
-   thetaU = np.arcsin( RT*dlatUdy*np.pi/180. / dxU  )
-   thetaV = np.arcsin( RT*dlatVdy*np.pi/180. / dxV  )
+   thetaT = np.arctan2( dlatTdx, dlonTdx*np.cos(latT*np.pi/180.) )
+   thetaU = np.arctan2( dlatUdx, dlonUdx*np.cos(latU*np.pi/180.) )
+   thetaV = np.arctan2( dlatVdx, dlonVdx*np.cos(latV*np.pi/180.) )
    print('    Minimum local grid angle in degrees w.r.t. (zonal,meridional):',thetaU.min().values*180./np.pi)
    print('    Maximum local grid angle in degrees w.r.t. (zonal,meridional):',thetaU.max().values*180./np.pi)
 
@@ -408,21 +411,6 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
         break
 
    print('Reducing domain to useful part, i.e. : ',[imin,imax,jmin,jmax])
-
-   #----------
-   # Attribute nan value to the LEVOF of points far from ocean points
-   # i.e. let LEVOF=0 for ice/land points adjacent to ocean points, and put LEVOF=nan for points farther.
-   # (to remove them from the interpolation process)
-   #msktmpT =  LEVOFT.isel(z=0).shift(x=1)+LEVOFT.isel(z=0).shift(x=-1)+LEVOFT.isel(z=0).shift(y=1)+LEVOFT.isel(z=0).shift(y=-1)\
-   #          +LEVOFT.isel(z=0).shift(x=1,y=1)+LEVOFT.isel(z=0).shift(x=-1,y=1)+LEVOFT.isel(z=0).shift(x=1,y=-1)+LEVOFT.isel(z=0).shift(x=-1,y=-1) 
-   #msktmpU =  LEVOFU.isel(z=0).shift(x=1)+LEVOFU.isel(z=0).shift(x=-1)+LEVOFU.isel(z=0).shift(y=1)+LEVOFU.isel(z=0).shift(y=-1)\
-   #          +LEVOFU.isel(z=0).shift(x=1,y=1)+LEVOFU.isel(z=0).shift(x=-1,y=1)+LEVOFU.isel(z=0).shift(x=1,y=-1)+LEVOFU.isel(z=0).shift(x=-1,y=-1) 
-   #msktmpV =  LEVOFV.isel(z=0).shift(x=1)+LEVOFV.isel(z=0).shift(x=-1)+LEVOFV.isel(z=0).shift(y=1)+LEVOFV.isel(z=0).shift(y=-1)\
-   #          +LEVOFV.isel(z=0).shift(x=1,y=1)+LEVOFV.isel(z=0).shift(x=-1,y=1)+LEVOFV.isel(z=0).shift(x=1,y=-1)+LEVOFV.isel(z=0).shift(x=-1,y=-1) 
-   #for kk in np.arange(depTUV.shape[0]):
-   #  LEVOFT.values[kk,:,:] = LEVOFT.isel(z=kk)*msktmpT.where( msktmpT.values > 0 ).values
-   #  LEVOFU.values[kk,:,:] = LEVOFU.isel(z=kk)*msktmpU.where( msktmpU.values > 0 ).values
-   #  LEVOFV.values[kk,:,:] = LEVOFV.isel(z=kk)*msktmpV.where( msktmpV.values > 0 ).values
 
    #----------
    # Create new xarray dataset including all useful variables:
