@@ -26,16 +26,16 @@ np.seterr(divide='ignore', invalid='ignore') # to avoid warning due to divide by
 #--------------------------------------------------------------------------
 # 0- General information:
 
-# Official name in MISOMIP2:
-model='NEMO_test'
-#model='MITGCM_test'
-#model='ROMS_test'
+# Choose a test case:
+#test_case='NEMO_test'
+#test_case='MITGCM_test'
+test_case='ROMS_test'
 
 reg='Amundsen' # 'Amundsen' or 'Weddell'
 
 exp='A1' # MISOMIP2 experiment ('A1', 'W1', 'A2', ...)
 
-data_dir='models/oce/'+model
+data_dir='models/oce/'+test_case
 
 missval=9.969209968386869e36 # missing value in created netcdf files
 
@@ -48,88 +48,132 @@ epsfr=1. # cut sea, sea-ice or ice-shelf fractions below epsfr (in %)
 # loading an xarray dataset containing all useful variables with (x,y) reshaped 
 # as 1 dimension in case of original structured grid :
 
-if ( model[0:4] == 'NEMO' ):
+if ( test_case[0:4] == 'NEMO' ):
+
+   model='NEMO3.6'          # model name, possibly including a version number
+   institute='IGE-CNRS-UGA' # name of the institute(s) that produced the simulation
+                            #    (use "-" rather than "_" for multiple entities)
+   abc='a'                  # single letter used to distinguish multiple set-up produced by a given institute
+                            #    (e.g., difference or model parameters, resolution, initial states or boundary conditions)
+   exp='Ocean-A1'           # MISOMIP2 experiment name (e.g., Ocean-A1, Ocean-W1, IceOcean-A1...)
+   original_sim_name='random test case'
 
    print('LOADING NEMO...')
    f_mesh   = data_dir+'/mesh_mask_test.nc'
    f_bathy  = data_dir+'/bathy_meter_test.nc'
-   fs_gridT = [data_dir+'/'+model+'_m0'+month.astype('str')+'_grid_T.nc' for month in np.arange(1,3)]
-   fs_gridU = [data_dir+'/'+model+'_m0'+month.astype('str')+'_grid_U.nc' for month in np.arange(1,3)]
-   fs_gridV = [data_dir+'/'+model+'_m0'+month.astype('str')+'_grid_V.nc' for month in np.arange(1,3)]
-   fs_SBC   = [data_dir+'/'+model+'_m0'+month.astype('str')+'_SBC.nc' for month in np.arange(1,3)]
-   fs_ice   = [data_dir+'/'+model+'_m0'+month.astype('str')+'_icemod.nc' for month in np.arange(1,3)]
-   # Barotropic Streamfunction calculated at U points using the cdfpsi function which is part of the cdftools (https://github.com/meom-group/CDFTOOLS):
-   fs_BSF   = [data_dir+'/'+model+'_m0'+month.astype('str')+'_psi.nc' for month in np.arange(1,3)]
+   fs_gridT = [data_dir+'/'+test_case+'_m0'+month.astype('str')+'_grid_T.nc' for month in np.arange(1,3)]
+   fs_gridU = [data_dir+'/'+test_case+'_m0'+month.astype('str')+'_grid_U.nc' for month in np.arange(1,3)]
+   fs_gridV = [data_dir+'/'+test_case+'_m0'+month.astype('str')+'_grid_V.nc' for month in np.arange(1,3)]
+   fs_SBC   = [data_dir+'/'+test_case+'_m0'+month.astype('str')+'_SBC.nc' for month in np.arange(1,3)]
+   fs_ice   = [data_dir+'/'+test_case+'_m0'+month.astype('str')+'_icemod.nc' for month in np.arange(1,3)]
+   # Barotropic Streamfunction calculated at U points using the cdfpsi function which is part of the cdftools
+   #    (see https://github.com/meom-group/CDFTOOLS):
+   fs_BSF   = [data_dir+'/'+test_case+'_m0'+month.astype('str')+'_psi.nc' for month in np.arange(1,3)]
 
    oce = mp.load_oce_mod_nemo( file_mesh_mask=f_mesh, file_bathy=f_bathy, files_gridT=fs_gridT,\
                   files_gridU=fs_gridU, files_gridV=fs_gridV, files_SBC=fs_SBC, files_ice=fs_ice,\
                   files_BSF=fs_BSF, rho0=1026.0, teos10=True )
 
-elif ( model[0:6] == 'MITGCM' ):
+elif ( test_case[0:6] == 'MITGCM' ):
+
+   model='MITGCM'           # model name, possibly including a version number
+   institute='UNN'          # name of the institute(s) that produced the simulation
+                            #    (use "-" rather than "_" for multiple entities)
+   abc='a'                  # single letter used to distinguish multiple set-up produced by a given institute
+                            #    (e.g., difference or model parameters, resolution, initial states or boundary conditions)
+   exp='Ocean-A1'           # MISOMIP2 experiment name (e.g., Ocean-A1, Ocean-W1, IceOcean-A1...)
+   original_sim_name='random test case'
 
    print('LOADING MITGCM...')
-   fT = data_dir+'/'+model+'_THETA.nc'
-   fS = data_dir+'/'+model+'_SALT.nc'
-   fU = data_dir+'/'+model+'_UVEL.nc'
-   fV = data_dir+'/'+model+'_VVEL.nc'
+   fT = data_dir+'/'+test_case+'_THETA.nc'
+   fS = data_dir+'/'+test_case+'_SALT.nc'
+   fU = data_dir+'/'+test_case+'_UVEL.nc'
+   fV = data_dir+'/'+test_case+'_VVEL.nc'
 
    oce = mp.load_oce_mod_mitgcm( files_T=fT, files_S=fS, files_U=fU, files_V=fV, rho0=1026.0, teos10=False )
 
-elif ( model[0:4] == 'ROMS' ):
+elif ( test_case[0:4] == 'ROMS' ):
+
+   model='ROMS'             # model name, possibly including a version number
+   institute='UTAS'         # name of the institute(s) that produced the simulation
+                            #    (use "-" rather than "_" for multiple entities)
+   abc='a'                  # single letter used to distinguish multiple set-up produced by a given institute
+                            #    (e.g., difference or model parameters, resolution, initial states or boundary conditions)
+   exp='Ocean-A1'           # MISOMIP2 experiment name (e.g., Ocean-A1, Ocean-W1, IceOcean-A1...)
+   original_sim_name='random test case'
 
    print('LOADING ROMS...')
    f_grid = data_dir+'/ROMS_test_grid.nc'
-   f_ALL  = [data_dir+'/'+model+'_m0'+month.astype('str')+'.nc' for month in np.arange(1,4)]
+   f_ALL  = [data_dir+'/'+test_case+'_m0'+month.astype('str')+'.nc' for month in np.arange(1,4)]
 
    oce = mp.load_oce_mod_roms( files_M=f_grid, files_T=f_ALL, rho0=1026.0, teos10=False )
 
 else:
 
-   sys.exit('Unknown model ==> Write a function to load this model outputs')
+   sys.exit('Unknown test_case ==> Write a function to load this new test case')
 
 #--------------------------------------------------------------------------
 # 2- Global attributes of output netcdf :
 
-def put_global_attrs(ds,experiment='TBD',avg_hor_res_73S=0.0,original_sim_name='None',\
-                     original_min_lat=-90.0,original_max_lat=90.0,original_min_lon=-180.0,original_max_lon=180.0):
+def put_global_attrs(ds,experiment='TBD', avg_hor_res_73S=0.0, original_sim_name='TBD', ocean_model='TBD', institute='TBD', \
+                     original_min_lat=-90.0, original_max_lat=90.0, original_min_lon=-180.0, original_max_lon=180.0):
    """ Put global attributes to the ds xarray dataset
 
    """
    ds.attrs['project'] = 'MISOMIP2'
-   ds.attrs['contact'] = 'Nicolas Jourdain <nicolas.jourdain@univ-grenoble-alpes.fr>' # name <email>
-   ds.attrs['institute'] = 'CNRS-UGA-IGE'
-   ds.attrs['computing_facility'] = 'occigen-CINES'                    # Computing center where the simulation was run
-   ds.attrs['interpolation_method'] = 'linear triangular barycentric'  # in: 'linear triangular barycentric', 'bi-linear',
-                                                                       #     'nearest-neighbor', 'conservative', ...       
-   ds.attrs['ocean_model'] = 'NEMO3.6'                                 # Model name and version
-   ds.attrs['reference'] = 'Jourdain et al. 2019 (doi:10.1016/j.ocemod.2018.11.001)'  # publication describing the simulation or a similar configuration
-   ds.attrs['original_sim_name'] = original_sim_name                   # original simulation name
-   ds.attrs['experiment'] = experiment                                 # in: 'A1', 'W1', 'A2', ...
-   ds.attrs['bathymetry'] = 'BedMachine-v1.33'                         # Bathymetry dataset (specify exact version)
-   ds.attrs['ice_shelf_draft'] = 'BedMachine-v1.33'                    # Ice draft depth dataset (specify exact version)
-   ds.attrs['atmosphere'] = 'DFS5.2'                                   # in: 'ERA5', 'ERAint', 'CORE', 'MERRA2', 'JRA55do', ...
-   ds.attrs['iceberg'] = 'Prescribed Freshwater'                       # in: 'Lagrangian Model', 'Prescribed Freshwater', 
-                                                                       #     'Prescribed Freshwater and Heat', 'None'
-   ds.attrs['sea_ice'] = 'Dynamics-Thermodynamics Model'               # in: 'Dynamics-Thermodynamics Model', 'Thermodynamics Model', 'Prescribed Freshwater and Heat'
-   ds.attrs['ocean_lateral_bdy'] = 'Simulation'                        # in: 'None', 'Observational Data', 'Ocean Reanalysis', 'Simulation', 'Simulation with corrections' 
-   ds.attrs['tides'] = 'Resolved (prescribed at bdy)'                  # in: 'None', 'Resolved (prescribed at bdy)', 'Resolved (tidal potential)',
-                                                                       #     'Parameterized (uniform tidal velocity)', 'Parameterized (non-uniform tidal velocity),
-                                                                       #     'Parameterized (other)'
-   ds.attrs['vertical_coordinate'] = 'Stretched Geopotential (Zstar)'  # in: 'Geopotential (Z)', 'Stretched Geopotential (Zstar)', 'Pressure (P)', 
-                                                                       #     'Stretched Pressure (P*)', 'Isopycnal', 'Terrain-Following (Sigma)', 
-                                                                       #     'Arbitrary Lagrangian-Eulerian (ALE)'
-   ds.attrs['is_melt_param'] = '3-equation (velocity-dependent gamma)' # in: '3-equation (constant gamma)', '3-equation (velocity-dependent gamma)',
-                                                                       #     '3-equation (stability and velocity-dependent gamma)', ...
-   ds.attrs['eos'] = 'TEOS10'                                          # in: 'TEOS10', 'EOS80', 'linear'.
-   ds.attrs['advection'] = '2nd order centered scheme for tracers and flux form - 2nd order centered scheme for momentum'
-   ds.attrs['horizontal_mixing'] = 'iso-neutral Laplacian for tracers and horizontal bi-Laplacian for momentum'
-   ds.attrs['vertical_mixing'] = 'turbulent eddy kinetic dependent vertical diffusion for both tracers and momentum ("TKE scheme")'
-   ds.attrs['convection'] = 'Parameterized using enhanced vertical mixing (tracer and momentum diffusivity set to 10 m2 s-1)'
-   ds.attrs['avg_hor_res_73S'] = avg_hor_res_73S                       # Average horizontal resolution (m) at 73degS in the MISOMIP2 domain (average of x and y resolution)
-   ds.attrs['original_min_lat'] = original_min_lat                     # Minimum latitude of the original domain in [-180:180]
-   ds.attrs['original_max_lat'] = original_max_lat                     # Minimum latitude of the original domain in [-180:180]
-   ds.attrs['original_min_lon'] = original_min_lon                     # Minimum longitude of the original domain in [-90:90]
-   ds.attrs['original_max_lon'] = original_max_lon                     # Minimum longitude of the original domain in [-90:90]
+   ds.attrs['contact'] = 'TBD <tbd@misomip2.com>'     # Name(s) of the person(s) who produced the simulation <email>
+   ds.attrs['institute'] = institute                  # Name of the institute(s) that produced the simulation 
+                                                      #     (use ``-'' to separate multiple entities)
+   ds.attrs['computing_facility'] = 'TBD'             # Computing center where the simulation was run
+   ds.attrs['interpolation_method'] = 'linear triangular barycentric'  # e.g. 'linear triangular barycentric', 'bi-linear',
+                                                                       #      'nearest-neighbor', 'conservative', ...       
+   ds.attrs['ocean_model'] = ocean_model              # Model name and version
+   ds.attrs['reference'] = 'TBD'                      # Main publication or website describing the simulation or a similar one
+   ds.attrs['original_sim_name'] = original_sim_name  # Original simulation name (to keep track of what was used in MISOMIP2)
+   ds.attrs['experiment'] = experiment                # MISOMIP2 experiment; e.g. 'A1', 'W1', 'A2', ...
+   ds.attrs['bathymetry'] = 'TBD'                     # Bathymetry dataset (specify exact version), e.g. `BedMachine-1.33', `Bedmap2', 
+                                                      #    `RTopo-2.0.4', `Merge of Millan et al. (2017) and Bedmap2'
+   ds.attrs['ice_shelf_draft'] = 'TBD'                # Dataset for the depth of ice-shelf base (similar to previous)
+   ds.attrs['atmosphere'] = 'TBD'                     # Atmospheric forcing, with a reference, e.g., `ERA5 (Hersbach et al. 2020)',
+                                                      #    `ERAint (Dee et al. 2011)', `JRA55do (Tsujino et al. 2018)',
+                                                      #    `MARv3.9.3 (Donat-Magnin et al. 2020)'
+   ds.attrs['iceberg'] = 'TBD'                        # Method used to account for melting icebergs, with a reference,
+                                                      #     e.g. `None', `Lagrangian model (Martin and Adcroft 2010)',
+                                                      #          `Prescribed freshwater (Merino et al. 2016)',
+                                                      #          `Prescribed Freshwater and Heat (Merino et al. 2016)' 
+   ds.attrs['sea_ice'] = 'TBD'                        # Method used to simulate or prescribe the ocean--sea-ice interaction,
+                                                      #     with a reference, e.g. 'Dynamics-Thermodynamics Model (Hibler 1979)',
+                                                      #                            'Thermodynamics Model (Bitz and Lipscomb 1999)',
+                                                      #                            'Prescribed Freshwater and Heat'
+   ds.attrs['ocean_lateral_bdy'] = 'TBD'              # Type of lateral boundary conditions, e.g. 'Simulation (Merino et al. 2018)',
+                                                      #     'Reanalysis (Mazloff et al. 2016)', 'Observations (Locarnini et al. 2018)',
+                                                      #     'Corrected simulation (explain method)', 'None' 
+   ds.attrs['tides'] = 'TBD'                          # Method used to account for the effect of tides on ice-shelf melt, and dataset
+                                                      #     e.g. `Barotropic tidal harmonics prescribed at lateral boundaries (CATS)',
+                                                      #          `Forced by a tidal potential', `None',
+                                                      #          `Parameterized through uniform tidal velocity (utide=0.1 m s-1)',
+                                                      #          'Parameterized through non-uniform tidal velocity (FES2012)'
+   ds.attrs['vertical_coordinate'] = 'TBD'            # e.g. `Geopotential (Z)', `Stretched Geopotential (Zstar)', `Pressure (P)',
+                                                      #      `Stretched Pressure (P*)', `Isopycnal', `Terrain-Following (Sigma)',
+                                                      #      `Arbitrary Lagrangian-Eulerian (ALE)'
+   ds.attrs['is_melt_param'] = 'TBD'                  # Parameterization used to calculate ice-shelf basal melt rates,
+                                                      #      e.g. `3-equation (constant gamma)', `3-equation (velocity-dependent gamma)',
+                                                      #           `3-equation (stability and velocity-dependent gamma)'
+   ds.attrs['eos'] = 'TBD'                            # Equation of state in original simulation, e.g. `TEOS10', `EOS80', `linear'
+   ds.attrs['advection'] = 'TBD'                      # Brief description of the momentum and tracer advection schemes 
+                                                      #      (centered, third-order with limiter, etc)
+   ds.attrs['horizontal_mixing'] = 'TBD'              # Brief description of how ``horizontal'' mixing was performed 
+                                                      #      (harmonic, biharmonic, etc.; within model levels, along geopotentials, 
+                                                      #       along isopycnals, etc.; using the Gent-McWilliams parameterization; etc)
+   ds.attrs['vertical_mixing'] = 'TBD'                # Brief description of how ``vertical'' mixing was performed (constant diffusivity,
+                                                      #       k-profile parameterization, etc.; harmonic, biharmonic, etc)
+   ds.attrs['convection'] = 'TBD'                     # Brief description of the procedure for handling convection, 
+                                                      #       e.g. `Explicitly modeled', `Parameterized using enhanced vertical mixing'
+   ds.attrs['avg_hor_res_73S'] = avg_hor_res_73S      # Average horizontal resolution (m) at 73degS in the MISOMIP2 domain (average of x and y resolution)
+   ds.attrs['original_min_lat'] = original_min_lat    # Minimum latitude of the original domain in [-90:90]
+   ds.attrs['original_max_lat'] = original_max_lat    # Minimum latitude of the original domain in [-90:90]
+   ds.attrs['original_min_lon'] = original_min_lon    # Minimum longitude of the original domain in [-180:180]
+   ds.attrs['original_max_lon'] = original_max_lon    # Minimum longitude of the original domain in [-180:180]
 
 #--------------------------------------------------------------------------
 # 3a- Interpolate to common 3d grid :
@@ -420,11 +464,12 @@ dsmiso3d = xr.Dataset(
 )
 
 mp.add_standard_attributes_oce(dsmiso3d,miss=missval)
-put_global_attrs(dsmiso3d,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='misomip2_test_case',\
+put_global_attrs(dsmiso3d, experiment=exp, avg_hor_res_73S=res_73S, original_sim_name=original_sim_name, \
+                 ocean_model=model, institute=institute, \
                  original_min_lat=oce.attrs.get('original_minlat'),original_max_lat=oce.attrs.get('original_maxlat'),\
                  original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
 
-file_miso3d = 'Oce3d_'+model+'_'+exp+'.nc'
+file_miso3d = 'Oce3d_'+model+'-'+institute+'_'+abc+'_'+exp+'_'+period+'.nc'
 
 print('Creating ',file_miso3d)
 dsmiso3d.to_netcdf(file_miso3d,unlimited_dims="time")
@@ -545,11 +590,12 @@ dssect = xr.Dataset(
 )
 
 mp.add_standard_attributes_oce(dssect,miss=missval)
-put_global_attrs(dssect,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='misomip2_test_case',\
+put_global_attrs(dssect, experiment=exp, avg_hor_res_73S=res_73S, original_sim_name=original_sim_name,\
+                 ocean_model=model, institute=institute, \
                  original_min_lat=oce.attrs.get('original_minlat'),original_max_lat=oce.attrs.get('original_maxlat'),\
                  original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
 
-file_sect = 'OceSec_'+model+'_'+exp+'.nc'
+file_sect = 'OceSec_'+model+'-'+institute+'_'+abc+'_'+exp+'_'+period+'.nc'
 
 print('Creating ',file_sect)
 dssect.to_netcdf(file_sect,unlimited_dims="time")
@@ -670,13 +716,14 @@ dsmoor = xr.Dataset(
 )
 
 mp.add_standard_attributes_oce(dsmoor,miss=missval)
-put_global_attrs(dsmoor,experiment=exp,avg_hor_res_73S=res_73S,original_sim_name='misomip2_test_case',\
+put_global_attrs(dsmoor, experiment=exp, avg_hor_res_73S=res_73S, original_sim_name=original_sim_name,\
+                 ocean_model=model, institute=institute, \
                  original_min_lat=oce.attrs.get('original_minlat'),original_max_lat=oce.attrs.get('original_maxlat'),\
                  original_min_lon=oce.attrs.get('original_minlon'),original_max_lon=oce.attrs.get('original_maxlon') )
 dsmoor.attrs['mooring_longitude'] = np.float32(lon_moor0d)
 dsmoor.attrs['mooring_latitude'] = np.float32(lat_moor0d)
 
-file_moor = 'OceMoor_'+model+'_'+exp+'.nc'
+file_moor = 'OceMoor_'+model+'-'+institute+'_'+abc+'_'+exp+'_'+period+'.nc'
 
 print('Creating ',file_moor)
 dsmoor.to_netcdf(file_moor,unlimited_dims="time")
