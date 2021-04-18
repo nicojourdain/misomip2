@@ -22,6 +22,7 @@ from datetime import datetime
 startTime = datetime.now()
 
 np.seterr(divide='ignore', invalid='ignore') # to avoid warning due to divide by zero
+np.seterr(divide='ignore', invalid='ignore')
 
 #--------------------------------------------------------------------------
 # 0- General information:
@@ -32,8 +33,6 @@ np.seterr(divide='ignore', invalid='ignore') # to avoid warning due to divide by
 test_case='ROMS_test'
 
 reg='Amundsen' # 'Amundsen' or 'Weddell'
-
-exp='A1' # MISOMIP2 experiment ('A1', 'W1', 'A2', ...)
 
 data_dir='models/oce/'+test_case
 
@@ -130,7 +129,7 @@ def put_global_attrs(ds,experiment='TBD', avg_hor_res_73S=0.0, original_sim_name
    ds.attrs['ocean_model'] = ocean_model              # Model name and version
    ds.attrs['reference'] = 'TBD'                      # Main publication or website describing the simulation or a similar one
    ds.attrs['original_sim_name'] = original_sim_name  # Original simulation name (to keep track of what was used in MISOMIP2)
-   ds.attrs['experiment'] = experiment                # MISOMIP2 experiment; e.g. 'A1', 'W1', 'A2', ...
+   ds.attrs['experiment'] = experiment                # MISOMIP2 experiment; e.g. 'Ocean-A1', 'Ocean-W1', 'Ocean-A2', ...
    ds.attrs['bathymetry'] = 'TBD'                     # Bathymetry dataset (specify exact version), e.g. `BedMachine-1.33', `Bedmap2', 
                                                       #    `RTopo-2.0.4', `Merge of Millan et al. (2017) and Bedmap2'
    ds.attrs['ice_shelf_draft'] = 'TBD'                # Dataset for the depth of ice-shelf base (similar to previous)
@@ -216,6 +215,12 @@ openseafracU=LEVOFU.isel(z=0)
 openseafracV=LEVOFV.isel(z=0)
 
 mtime = oce.time.size
+yeari = str(oce.time.isel(time=0).dt.year.values)
+yearf = str(oce.time.isel(time=mtime-1).dt.year.values)
+monthi = str(oce.time.isel(time=0).dt.month.values).zfill(2)
+monthf = str(oce.time.isel(time=mtime-1).dt.month.values).zfill(2)
+period = yeari+monthi+'-'+yearf+monthf
+print('Data from '+monthi+'-'+yeari+' to '+monthf+'-'+yearf)
 
 # mask showing the original domain on the MISOMIP grid (=nan where interpolation of any of T, U, V grid is nan, =1 elsewhere):
 DOMMSK_miso =               mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.DOMMSKT )
@@ -240,16 +245,13 @@ DEPTHO_miso = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_m
 DEPTHO_miso[ np.isnan(DOMMSK_miso) | np.isnan(DEPTHO_miso) ] = 0.e0 # will be replaced with missval later on
 
 # Sea area fraction at each vertical level on the MISOMIP grid: 
-tmp_LEVT = LEVOFT.interp(z=dep_miso)
-tmp_LEVU = LEVOFU.interp(z=dep_miso)
+tmp_LEVT = LEVOFT.interp(z=dep_miso) # extrapolate to avoid nan at surface but better to
+tmp_LEVU = LEVOFU.interp(z=dep_miso) # bring first level to zero when loading model data.
 tmp_LEVV = LEVOFV.interp(z=dep_miso)
-# Take first level for the surface (no interpolation as first level can be several meters below the surface):
-tmp_LEVT[0,:] = openseafracT
-tmp_LEVU[0,:] = openseafracU
-tmp_LEVV[0,:] = openseafracV
+
 LEVOF_miso = np.zeros((mdep,mlat,mlon))
 for kk in np.arange(mdep):
-  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, tmp_LEVT[kk,:].values )
+  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, tmp_LEVT[kk,:] )
   tzz[ np.isnan(DOMMSK_miso) ] = np.nan # will update to missval at the end of the calculation
   LEVOF_miso[kk,:,:] = tzz
 
@@ -257,35 +259,16 @@ for kk in np.arange(mdep):
 
 tmpxS = LEVOFT*oce.SO
 tmp_SS = tmpxS.interp(z=dep_miso) / tmp_LEVT
-ksrf=np.argwhere(dep_miso < oce.depTUV.min().values)
-kbot=np.argwhere(dep_miso > oce.depTUV.max().values)
-if ( np.size(ksrf) != 0 ): 
-  for kk in ksrf: tmp_SS[kk,:,:] = tmpxS.isel(z=0) / tmp_LEVT.isel(z=0) # take first level, no interpolation
-if ( np.size(kbot) != 0 ): 
-  for kk in kbot: tmp_SS[kk,:,:] = tmpxS.isel(z=np.max([0,np.min(kbot)-1])) / tmp_LEVT.isel(z=np.max([0,np.min(kbot)-1]))
 
 tmpxT = LEVOFT*oce.THETAO
 tmp_TT = tmpxT.interp(z=dep_miso) / tmp_LEVT
-if ( np.size(ksrf) != 0 ): 
-  for kk in ksrf: tmp_TT[kk,:,:] = tmpxT.isel(z=0) / tmp_LEVT.isel(z=0) # take first level, no interpolation
-if ( np.size(kbot) != 0 ): 
-  for kk in kbot: tmp_TT[kk,:,:] = tmpxT.isel(z=np.max([0,np.min(kbot)-1])) / tmp_LEVT.isel(z=np.max([0,np.min(kbot)-1]))
 
 tmpxU = LEVOFU*oce.UX
 tmp_UX = tmpxU.interp(z=dep_miso) / tmp_LEVU
-if ( np.size(ksrf) != 0 ): 
-  for kk in ksrf: tmp_UX[kk,:,:] = tmpxU.isel(z=0) / tmp_LEVU.isel(z=0) # take first level, no interpolation
-if ( np.size(kbot) != 0 ): 
-  for kk in kbot: tmp_UX[kk,:,:] = tmpxU.isel(z=np.max([0,np.min(kbot)-1])) / tmp_LEVU.isel(z=np.max([0,np.min(kbot)-1]))
 
 tmpxV = LEVOFV*oce.VY
 tmp_VY = tmpxV.interp(z=dep_miso) / tmp_LEVV
-if ( np.size(ksrf) != 0 ): 
-  for kk in ksrf: tmp_VY[kk,:,:] = tmpxV.isel(z=0) / tmp_LEVV.isel(z=0) # take first level, no interpolation
-if ( np.size(kbot) != 0 ): 
-  for kk in kbot: tmp_VY[kk,:,:] = tmpxV.isel(z=np.max([0,np.min(kbot)-1])) / tmp_LEVV.isel(z=np.max([0,np.min(kbot)-1]))
 
-#
 #----- interpolation of time-varying fields:
 
 SO_miso     = np.zeros((mtime,mdep,mlat,mlon)) + missval
@@ -316,34 +299,42 @@ for ll in np.arange(mtime):
 
   ## fields interpolated from sea cells ( C/T grid ):
 
-  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.ZOS.isel(time=ll), weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr )
+  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.ZOS.isel(time=ll), \
+                              weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr )
   tzz[ np.isnan(tzz) | domcond ] = missval
   ZOS_miso[ll,:,:] = tzz
 
-  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.TOB.isel(time=ll), weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr )
+  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.TOB.isel(time=ll), \
+                              weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr )
   tzz[ np.isnan(tzz) | domcond ] = missval
   TOB_miso[ll,:,:] = tzz
 
-  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.SOB.isel(time=ll), weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr )
+  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.SOB.isel(time=ll), \
+                              weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr )
   tzz[ np.isnan(tzz) | domcond ] = missval
   SOB_miso[ll,:,:] = tzz
 
-  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.HFDS.isel(time=ll), weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr ) 
+  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.HFDS.isel(time=ll), \
+                              weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr ) 
   tzz[ np.isnan(tzz) | domcond ] = missval
   HFDS_miso[ll,:,:] = tzz
 
-  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.WFOATRLI.isel(time=ll), weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr ) 
+  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.WFOATRLI.isel(time=ll), \
+                              weight=seafracT, skipna=True, filnocvx=True, threshold=epsfr ) 
   tzz[ np.isnan(tzz) | domcond ] = missval
   WFOATRLI_miso[ll,:,:] = tzz
 
   ## fields interpolated from sea cells ( U & V grids ):
 
-  tzz = mp.horizontal_interp( latU, lonU*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.MSFTBAROT.isel(time=ll), weight=seafracU, skipna=True, filnocvx=True, threshold=epsfr ) 
+  tzz = mp.horizontal_interp( latU, lonU*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.MSFTBAROT.isel(time=ll), \
+                              weight=seafracU, skipna=True, filnocvx=True, threshold=epsfr ) 
   tzz[ np.isnan(tzz) | domcond ] = missval
   MSFTBAROT_miso[ll,:,:] = tzz
 
-  TAUX_notrot = mp.horizontal_interp( latU, lonU*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.TAUX.isel(time=ll), weight=seafracU, skipna=True, filnocvx=True, threshold=epsfr )
-  TAUY_notrot = mp.horizontal_interp( latV, lonV*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.TAUY.isel(time=ll), weight=seafracV, skipna=True, filnocvx=True, threshold=epsfr )
+  TAUX_notrot = mp.horizontal_interp( latU, lonU*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.TAUX.isel(time=ll), \
+                                      weight=seafracU, skipna=True, filnocvx=True, threshold=epsfr )
+  TAUY_notrot = mp.horizontal_interp( latV, lonV*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.TAUY.isel(time=ll), \
+                                      weight=seafracV, skipna=True, filnocvx=True, threshold=epsfr )
   TAUUO_miso[ll,:,:] = TAUX_notrot * np.cos(theU) - TAUY_notrot * np.sin(theV) # rotated to zonal
   TAUVO_miso[ll,:,:] = TAUY_notrot * np.cos(theV) + TAUX_notrot * np.sin(theU) # rotated to meridional
   TAUUO_miso[ ( np.isnan(TAUUO_miso) ) | domcond ] = missval
@@ -351,40 +342,49 @@ for ll in np.arange(mtime):
 
   ## fileds interpolated from open-sea cells :
 
-  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.WFOSICOR.isel(time=ll), weight=openseafracT, skipna=True, filnocvx=True, threshold=epsfr )
+  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.WFOSICOR.isel(time=ll), \
+                              weight=openseafracT, skipna=True, filnocvx=True, threshold=epsfr )
   tzz[ np.isnan(tzz) | domcond ] = missval
   WFOSICOR_miso[ll,:,:] = tzz
 
-  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.SICONC.isel(time=ll), weight=openseafracT, skipna=True, filnocvx=True, threshold=epsfr )
+  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.SICONC.isel(time=ll), \
+                              weight=openseafracT, skipna=True, filnocvx=True, threshold=epsfr )
   tzz[ np.isnan(tzz) | domcond ] = np.nan # will be updated to missval later on
   SICONC_miso[ll,:,:] = tzz
 
-  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.SIVOL.isel(time=ll), weight=openseafracT, skipna=True, filnocvx=True, threshold=epsfr )
+  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.SIVOL.isel(time=ll), \
+                              weight=openseafracT, skipna=True, filnocvx=True, threshold=epsfr )
   tzz[ np.isnan(tzz) | domcond ] = missval
   SIVOL_miso[ll,:,:] = tzz
 
   ## fileds interpolated from ice-shelf cells :
 
-  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.FICESHELF.isel(time=ll), weight=oce.SFTFLI, skipna=True, filnocvx=True, threshold=epsfr )
+  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.FICESHELF.isel(time=ll), \
+                              weight=oce.SFTFLI, skipna=True, filnocvx=True, threshold=epsfr )
   tzz[ np.isnan(tzz) | domcond ] = missval
   FICESHELF_miso[ll,:,:] = tzz
 
-  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.DYDRFLI.isel(time=ll), weight=oce.SFTFLI, skipna=True, filnocvx=True, threshold=epsfr ) 
+  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.DYDRFLI.isel(time=ll), \
+                              weight=oce.SFTFLI, skipna=True, filnocvx=True, threshold=epsfr ) 
   tzz[ np.isnan(tzz) | domcond ] = missval
   DYDRFLI_miso[ll,:,:] = tzz
 
-  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.THDRFLI.isel(time=ll), weight=oce.SFTFLI, skipna=True, filnocvx=True, threshold=epsfr ) 
+  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.THDRFLI.isel(time=ll), \
+                              weight=oce.SFTFLI, skipna=True, filnocvx=True, threshold=epsfr ) 
   tzz[ np.isnan(tzz) | domcond ] = missval
   THDRFLI_miso[ll,:,:] = tzz
 
-  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.HADRFLI.isel(time=ll), weight=oce.SFTFLI, skipna=True, filnocvx=True, threshold=epsfr ) 
+  tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.HADRFLI.isel(time=ll), \
+                              weight=oce.SFTFLI, skipna=True, filnocvx=True, threshold=epsfr ) 
   tzz[ np.isnan(tzz) | domcond ] = missval
   HADRFLI_miso[ll,:,:] = tzz
 
   ## fileds interpolated from sea-ice cells :
 
-  SIUX_notrot = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.SIUX.isel(time=ll), weight=oce.SICONC.isel(time=ll), skipna=True, filnocvx=True, threshold=epsfr )
-  SIVY_notrot = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.SIVY.isel(time=ll), weight=oce.SICONC.isel(time=ll), skipna=True, filnocvx=True, threshold=epsfr )
+  SIUX_notrot = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.SIUX.isel(time=ll), \
+                                      weight=oce.SICONC.isel(time=ll), skipna=True, filnocvx=True, threshold=epsfr )
+  SIVY_notrot = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, oce.SIVY.isel(time=ll), \
+                                      weight=oce.SICONC.isel(time=ll), skipna=True, filnocvx=True, threshold=epsfr )
   SIU_miso[ll,:,:] = SIUX_notrot * np.cos(theT) - SIVY_notrot * np.sin(theT) # rotated to zonal
   SIV_miso[ll,:,:] = SIVY_notrot * np.cos(theT) + SIUX_notrot * np.sin(theT) # rotated to meridional
   SIU_miso [ np.isnan(SIU_miso) | domcond ] = missval
@@ -396,20 +396,20 @@ for ll in np.arange(mtime):
 
     condkk = ( (LEVOF_miso[kk,:,:] < epsfr) | domcond )
 
-    tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, tmp_SS.isel(time=ll,z=kk).values, \
-                                weight=tmp_LEVT.isel(z=kk).values, skipna=True, filnocvx=True, threshold=epsfr )
+    tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, tmp_SS.isel(time=ll,z=kk), \
+                                weight=tmp_LEVT.isel(z=kk), skipna=True, filnocvx=True, threshold=epsfr )
     tzz[ condkk | (np.isnan(tzz)) ] = missval
     SO_miso[ll,kk,:,:] = tzz
 
-    tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, tmp_TT.isel(time=ll,z=kk).values, \
-                                weight=tmp_LEVT.isel(z=kk).values, skipna=True, filnocvx=True, threshold=epsfr )
+    tzz = mp.horizontal_interp( latT, lonT*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, tmp_TT.isel(time=ll,z=kk), \
+                                weight=tmp_LEVT.isel(z=kk), skipna=True, filnocvx=True, threshold=epsfr )
     tzz[ condkk | (np.isnan(tzz)) ] = missval
     THETAO_miso[ll,kk,:,:] = tzz
 
-    UX_notrot = mp.horizontal_interp( latU, lonU*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, tmp_UX.isel(time=ll,z=kk).values, \
-                                      weight=tmp_LEVU.isel(z=kk).values, skipna=True, filnocvx=True, threshold=epsfr )
-    VY_notrot = mp.horizontal_interp( latV, lonV*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, tmp_VY.isel(time=ll,z=kk).values, \
-                                      weight=tmp_LEVV.isel(z=kk).values, skipna=True, filnocvx=True, threshold=epsfr )
+    UX_notrot = mp.horizontal_interp( latU, lonU*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, tmp_UX.isel(time=ll,z=kk), \
+                                      weight=tmp_LEVU.isel(z=kk), skipna=True, filnocvx=True, threshold=epsfr )
+    VY_notrot = mp.horizontal_interp( latV, lonV*aa, mlat, mlon, lat_miso1d, lon_miso1d*aa, tmp_VY.isel(time=ll,z=kk), \
+                                      weight=tmp_LEVV.isel(z=kk), skipna=True, filnocvx=True, threshold=epsfr )
     tzz = UX_notrot * np.cos(theU) - VY_notrot * np.sin(theV) # rotated to zonal
     tzz[ condkk | (np.isnan(tzz)) ] = missval
     UO_miso[ll,kk,:,:] = tzz
@@ -517,8 +517,7 @@ domcond = ( np.isnan(DOMMSK_sect) )
 DEPFLI_sect = np.squeeze( mp.horizontal_interp( latT, lonT*aa, mlonlatsec, 1, lat_sect1d, lon_sect1d*aa, oce.DEPFLI.where(cond_secT,drop=True), \
                                                 weight=oce.SFTFLI.where(cond_secT,drop=True), \
                                                 skipna=True, filnocvx=True, threshold=epsfr ) )
-DEPFLI_sect[ np.isnan(DOMMSK_sect) | np.isnan(DEPFLI_sect) ] = 0.e0 # will be replaced with missval later on
-                                                #weight=oce.SFTFLI.where(cond_secT,drop=True)*oce.DOMMSKT.where(cond_secT,drop=True), \
+DEPFLI_sect[ domcond | np.isnan(DEPFLI_sect) ] = 0.e0 # will be replaced with missval later on
 
 # Ocean depth on MISOMIP grid (=nan where land or grounded ice or beyond model domain)
 DEPTHO_sect = np.squeeze( mp.horizontal_interp( latT, lonT*aa, mlonlatsec, 1, lat_sect1d, lon_sect1d*aa, oce.DEPTHO.where(cond_secT,drop=True), \
@@ -527,30 +526,18 @@ DEPTHO_sect[ domcond | np.isnan(DEPTHO_sect) ] = 0.e0 # will be replaced with mi
 
 # vertical then horizontal interpolation of constant 3d fields to common grid :
 tmp_LEVT = LEVOFT.interp(z=dep_sect)
-# Take first level for the surface (no interpolation as first level can be several meters below the surface):
-tmp_LEVT[0,:] = openseafracT
+
 LEVOF_sect = np.zeros((mdepsect,mlonlatsec))
 for kk in np.arange(mdepsect):
-  tzz = np.squeeze( mp.horizontal_interp( latT, lonT*aa, mlonlatsec, 1, lat_sect1d, lon_sect1d*aa, tmp_LEVT[kk,:].values ) )
+  tzz = np.squeeze( mp.horizontal_interp( latT, lonT*aa, mlonlatsec, 1, lat_sect1d, lon_sect1d*aa, tmp_LEVT[kk,:] ) )
   tzz[ domcond ] = missval
   LEVOF_sect[kk,:] = tzz
 
 # vertical interpolation of T, S, U, V to common vertical grid :
 tmpxS = LEVOFT*oce.SO.where(cond_secT,drop=True)
 tmp_SS = tmpxS.interp(z=dep_sect) / tmp_LEVT
-ksrf=np.argwhere(dep_sect < oce.depTUV.min().values)
-kbot=np.argwhere(dep_sect > oce.depTUV.max().values)
-if ( np.size(ksrf) != 0 ): 
-  for kk in ksrf: tmp_SS[kk,:,:] = tmpxS.isel(z=0) / tmp_LEVT.isel(z=0) # take first level, no interpolation
-if ( np.size(kbot) != 0 ): 
-  for kk in kbot: tmp_SS[kk,:,:] = tmpxS.isel(z=np.max([0,np.min(kbot)-1])) / tmp_LEVT.isel(z=np.max([0,np.min(kbot)-1]))
 tmpxT = LEVOFT*oce.THETAO.where(cond_secT,drop=True)
 tmp_TT = tmpxT.interp(z=dep_sect) / tmp_LEVT
-if ( np.size(ksrf) != 0 ):
-  for kk in ksrf: tmp_TT[kk,:,:] = tmpxT.isel(z=0) / tmp_LEVT.isel(z=0) # take first level, no interpolation
-if ( np.size(kbot) != 0 ):
-  for kk in kbot: tmp_TT[kk,:,:] = tmpxT.isel(z=np.max([0,np.min(kbot)-1])) / tmp_LEVT.isel(z=np.max([0,np.min(kbot)-1]))
-
 SO_sect     = np.zeros((mtime,mdepsect,mlonlatsec)) + missval
 THETAO_sect = np.zeros((mtime,mdepsect,mlonlatsec)) + missval
 
@@ -559,13 +546,13 @@ for ll in np.arange(mtime):
 
     condkk = ( (LEVOF_sect[kk,:] < epsfr) | domcond )
 
-    tzz = np.squeeze(mp.horizontal_interp( latT, lonT*aa, mlonlatsec, 1, lat_sect1d, lon_sect1d*aa, tmp_SS.isel(time=ll,z=kk).values, \
-                                           weight=tmp_LEVT.isel(z=kk).values, skipna=True, filnocvx=True, threshold=epsfr ) )
+    tzz = np.squeeze(mp.horizontal_interp( latT, lonT*aa, mlonlatsec, 1, lat_sect1d, lon_sect1d*aa, tmp_SS.isel(time=ll,z=kk), \
+                                           weight=tmp_LEVT.isel(z=kk), skipna=True, filnocvx=True, threshold=epsfr ) )
     tzz[ condkk | (np.isnan(tzz)) ] = missval
     SO_sect[ll,kk,:] = tzz
 
-    tzz = np.squeeze(mp.horizontal_interp( latT, lonT*aa, mlonlatsec, 1, lat_sect1d, lon_sect1d*aa, tmp_TT.isel(time=ll,z=kk).values, \
-                                           weight=tmp_LEVT.isel(z=kk).values, skipna=True, filnocvx=True, threshold=epsfr ) )
+    tzz = np.squeeze(mp.horizontal_interp( latT, lonT*aa, mlonlatsec, 1, lat_sect1d, lon_sect1d*aa, tmp_TT.isel(time=ll,z=kk), \
+                                           weight=tmp_LEVT.isel(z=kk), skipna=True, filnocvx=True, threshold=epsfr ) )
     tzz[ condkk | (np.isnan(tzz)) ] = missval
     THETAO_sect[ll,kk,:] = tzz
 
@@ -645,7 +632,6 @@ DEPFLI_moor = np.squeeze( mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d,
                                                 weight=oce.SFTFLI.where(cond_mooT,drop=True), \
                                                 skipna=True, filnocvx=True, threshold=epsfr ) )
 DEPFLI_moor[ np.isnan(DOMMSK_moor) | np.isnan(DEPFLI_moor) ] = 0.e0 # will be replaced will missval later on
-                                                #weight=oce.SFTFLI.where(cond_mooT,drop=True)*oce.DOMMSKT.where(cond_mooT,drop=True), \
 
 # Ocean depth on MISOMIP grid (=nan where land or grounded ice or beyond model domain)
 DEPTHO_moor = np.squeeze(mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d, lon_moor0d*aa, oce.DEPTHO.where(cond_mooT,drop=True), \
@@ -654,11 +640,10 @@ DEPTHO_moor[ np.isnan(DOMMSK_moor) | np.isnan(DEPTHO_moor) ] = 0.e0 # will be re
 
 # vertical then horizontal interpolation of constant 3d fields to common grid :
 tmp_LEVT = LEVOFT.interp(z=dep_moor)
-# Take first level for the surface (no interpolation as first level can be several meters below the surface):
-tmp_LEVT[0,:] = openseafracT
+
 LEVOF_moor = np.zeros((mdepmoor))
 for kk in np.arange(mdepmoor):
-  tzz = np.squeeze( mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d, lon_moor0d*aa, tmp_LEVT[kk,:].values ) )
+  tzz = np.squeeze( mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d, lon_moor0d*aa, tmp_LEVT[kk,:] ) )
   if ( np.isnan(DOMMSK_moor) ):
      tzz = missval
   LEVOF_moor[kk] = tzz
@@ -666,19 +651,8 @@ for kk in np.arange(mdepmoor):
 # vertical interpolation of T, S, U, V to common vertical grid :
 tmpxS = LEVOFT*oce.SO.where(cond_mooT,drop=True)
 tmp_SS = tmpxS.interp(z=dep_moor) / tmp_LEVT
-ksrf=np.argwhere(dep_moor < oce.depTUV.min().values)
-kbot=np.argwhere(dep_moor > oce.depTUV.max().values)
-if ( np.size(ksrf) != 0 ):
-  for kk in ksrf: tmp_SS[kk,:,:] = tmpxS.isel(z=0) / tmp_LEVT.isel(z=0) # take first level, no interpolation
-if ( np.size(kbot) != 0 ):
-  for kk in kbot: tmp_SS[kk,:,:] = tmpxS.isel(z=np.max([0,np.min(kbot)-1])) / tmp_LEVT.isel(z=np.max([0,np.min(kbot)-1]))
 tmpxT = LEVOFT*oce.THETAO.where(cond_mooT,drop=True)
 tmp_TT = tmpxT.interp(z=dep_moor) / tmp_LEVT
-if ( np.size(ksrf) != 0 ):
-  for kk in ksrf: tmp_TT[kk,:,:] = tmpxT.isel(z=0) / tmp_LEVT.isel(z=0) # take first level, no interpolation
-if ( np.size(kbot) != 0 ):
-  for kk in kbot: tmp_TT[kk,:,:] = tmpxT.isel(z=np.max([0,np.min(kbot)-1])) / tmp_LEVT.isel(z=np.max([0,np.min(kbot)-1]))
-
 SO_moor     = np.zeros((mtime,mdepmoor)) + missval
 THETAO_moor = np.zeros((mtime,mdepmoor)) + missval
 
@@ -687,13 +661,13 @@ for ll in np.arange(mtime):
 
     condkk = ( (LEVOF_moor[kk] < epsfr) | (np.isnan(DOMMSK_moor)) )
 
-    tzz = np.squeeze(mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d, lon_moor0d*aa, tmp_SS.isel(time=ll,z=kk).values, \
-                                           weight=tmp_LEVT.isel(z=kk).values, skipna=True, filnocvx=True, threshold=epsfr ) )
+    tzz = np.squeeze(mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d, lon_moor0d*aa, tmp_SS.isel(time=ll,z=kk), \
+                                           weight=tmp_LEVT.isel(z=kk), skipna=True, filnocvx=True, threshold=epsfr ) )
     tzz[ condkk | (np.isnan(tzz)) ] = missval
     SO_moor[ll,kk] = tzz
 
-    tzz = np.squeeze(mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d, lon_moor0d*aa, tmp_TT.isel(time=ll,z=kk).values, \
-                                           weight=tmp_LEVT.isel(z=kk).values, skipna=True, filnocvx=True, threshold=epsfr ) )
+    tzz = np.squeeze(mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d, lon_moor0d*aa, tmp_TT.isel(time=ll,z=kk), \
+                                           weight=tmp_LEVT.isel(z=kk), skipna=True, filnocvx=True, threshold=epsfr ) )
     tzz[ condkk | (np.isnan(tzz)) ] = missval
     THETAO_moor[ll,kk] = tzz
 

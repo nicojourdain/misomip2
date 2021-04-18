@@ -10,28 +10,49 @@ from datetime import datetime
 
 #====================================================================================
 def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
-                      file_bathy='bathy_meter.nc',\
+                      file_bathy='dummy',\
                       files_gridT='nemo_grid_T.nc',\
                       files_gridU='nemo_grid_U.nc',\
                       files_gridV='nemo_grid_V.nc',\
                       files_SBC='nemo_flxT.nc',\
                       files_ice='nemo_icemod.nc',\
                       files_BSF='nemo_psi.nc',\
-                      rho0=1026.0, teos10=False, region='Amundsen' ):
+                      rho0=1026.0, teos10=False, region='Amundsen', parallel=False ):
    """ Read NEMO outputs and define an xarray dataset containing 
-       all variables required in MISOMIP2
+       all variables required in MISOMIP2. It is adapted to NEMO's 
+       C-grid (including stretched grids like eORCA) and standard 
+       mesh/mask variables.
 
-       Adapted to NEMO's C-grid and standard mesh/mask variables.
+       Input:
 
-       rho0 corresponds to rau0 value in NEMO's eosbn2.F90 i.e. reference volumic mass [kg m-3]
+         file_mesh_mask: mesh mask file [default='mesh_mask.nc']
 
-       teos10=False -> assumes the nemo outputs are in potential temperature & practical salinity (EOS80)
-             =True  -> assumes the nemo outputs are in CT and AS and convert to PT and PS
+         file_bathy: bathymetry file [optional, look for data in file_mesh_mask if not provided]
+
+         files_gridT: file or list of files containing the temperature and salinity variables
+      
+         files_gridU: file or list of files containing the x-velocity and related variables
+
+         files_gridV: file or list of files containing the y-velocity and related variables
+
+         files_ice: file or list of files containing the sea-ice variables
+
+         files_SBC: file or list of files containing the surface fluxes variables
+
+         files_BSF: file or list of files containing the barotropic streamfunction calculated at U-points, e.g. 
+         using the cdfpsi function which is part of the [CDFTOOLS](https://github.com/meom-group/CDFTOOLS).
+
+         rho0 corresponds to rau0 value in NEMO's eosbn2.F90 i.e. reference volumic mass [kg m-3]
+
+         teos10=False -> assumes the nemo outputs are in potential temperature & practical salinity (EOS80)
+               =True  -> assumes the nemo outputs are in CT and AS and convert to PT and PS
 
        region = 'Amundsen' (default) or 'Weddell'
 
-       NB: files_BSF contains the barotropic streamfunction calculated at U-points, e.g. using
-           the cdfpsi function which is part of the cdftools (https://github.com/meom-group/CDFTOOLS) 
+       parallel: If True, the open and preprocess steps of this function will be performed in parallel
+
+       Output:
+          xarray dataset of coordinates ("time", "z", "sxy") (sxy= one-dimensionalized horizontal space)
 
        Example1:
        ds = load_oce_mod_nemo()
@@ -50,16 +71,21 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
 
    startTime = datetime.now()
 
-   RT = 6.371e6 # Earth radius in meters
+   if ( file_bathy == 'dummy' ):
+     file_bathy=file_mesh_mask
 
    ncM = xr.open_dataset(file_mesh_mask,decode_coords=False) ; ncM=rename_dimensions(ncM); ncM=ncM.isel(time=0)
-   ncB = xr.open_dataset(file_bathy,decode_coords=False) ; ncB=rename_dimensions(ncB)
-   ncT = xr.open_mfdataset(files_gridT,decode_coords=False); ncT=rename_dimensions(ncT)
-   ncU = xr.open_mfdataset(files_gridU,decode_coords=False); ncU=rename_dimensions(ncU)
-   ncV = xr.open_mfdataset(files_gridV,decode_coords=False); ncV=rename_dimensions(ncV)
-   ncS = xr.open_mfdataset(files_SBC,decode_coords=False); ncS=rename_dimensions(ncS)
-   ncI = xr.open_mfdataset(files_ice,decode_coords=False); ncI=rename_dimensions(ncI)
-   ncP = xr.open_mfdataset(files_BSF,decode_coords=False); ncP=rename_dimensions(ncP)
+   ncT = xr.open_mfdataset(files_gridT,decode_coords=False, parallel=parallel); ncT=rename_dimensions(ncT)
+   ncU = xr.open_mfdataset(files_gridU,decode_coords=False, parallel=parallel); ncU=rename_dimensions(ncU)
+   ncV = xr.open_mfdataset(files_gridV,decode_coords=False, parallel=parallel); ncV=rename_dimensions(ncV)
+   ncS = xr.open_mfdataset(files_SBC,decode_coords=False, parallel=parallel); ncS=rename_dimensions(ncS)
+   ncI = xr.open_mfdataset(files_ice,decode_coords=False, parallel=parallel); ncI=rename_dimensions(ncI)
+   ncP = xr.open_mfdataset(files_BSF,decode_coords=False, parallel=parallel); ncP=rename_dimensions(ncP)
+
+   if ( file_bathy == 'dummy' ):
+     print('    WARNING : file_bathy was not provided => assuming that bathymetry and ice draft can be found in file_mesh_mask.')
+   else:
+     ncB = xr.open_dataset(file_bathy,decode_coords=False) ; ncB=rename_dimensions(ncB)
 
    mtime = ncT.time.shape[0]
 
@@ -117,8 +143,8 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
 
    # 2d ice-shelf fractoin:
    SFTFLI = ncM.misf*1.e0
-   SFTFLI = SFTFLI.where( (SFTFLI.values > 1.5), 0.e0 )
-   SFTFLI = SFTFLI.where( (SFTFLI.values < 1.5), 100. )
+   SFTFLI = SFTFLI.where( (SFTFLI > 1.5), 0.e0 )
+   SFTFLI = SFTFLI.where( (SFTFLI < 1.5), 100. )
 
    # Bathymetry (including under ice shelves) [m]
    # (if possible after NEMO's initialization, i.e. from mesh_mask) :
@@ -309,7 +335,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    # sea-ice concentration [0-100]
    if ( "siconc" in ncI.data_vars ):
      SICONC = ncI.siconc*100.0
-     SICONC = SICONC.where( (~np.isnan(SICONC.values)) & (~np.isinf(SICONC.values)), 0.e0 )
+     SICONC = SICONC.where( (~np.isnan(SICONC)) & (~np.isinf(SICONC)), 0.e0 )
    else:
      print('    WARNING :   No data found for SICONC  -->  filled with NaNs')
      SICONC = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )   
@@ -354,11 +380,11 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    # Water flux entering the ocean due to sea-ice (melting-freezing) and surface correction (SSS restoring)
    # (= fsitherm + wfocorr in Griffies 2016 section K2) [kg m-2 s-1]
    if ( ("erp" in ncS.data_vars) & ("saltflx" in ncS.data_vars) ):
-     WFOSICOR = ncS.erp.where( (~np.isnan(ncS.erp.values)), 0.e0 ) - ncS.saltflx / SS.isel(z=0) # NB: saltflx unit attribute is wrong in nico's output, it is actually in [1e-3 kg m-2 s-1]
+     WFOSICOR = ncS.erp.where( (~np.isnan(ncS.erp)), 0.e0 ) - ncS.saltflx / SS.isel(z=0) # NB: saltflx unit attribute is wrong in nico's output, it is actually in [1e-3 kg m-2 s-1]
    elif ( ("erp" in ncS.data_vars) & ("sfx" in ncI.data_vars) ):
-     WFOSICOR = ncS.erp.where( (~np.isnan(ncS.erp.values)), 0.e0 ) - ncI.sfx/86400.0 / SS.isel(z=0)
+     WFOSICOR = ncS.erp.where( (~np.isnan(ncS.erp)), 0.e0 ) - ncI.sfx/86400.0 / SS.isel(z=0)
    elif ( ("sowafld" in ncS.data_vars) & ("sosfldow" in ncS.data_vars) ):
-     WFOSICOR = ncS.sowafld.where( (~np.isnan(ncS.sowafld.values)), 0.e0 ) - ncS.sosfldow / SS.isel(z=0)
+     WFOSICOR = ncS.sowafld.where( (~np.isnan(ncS.sowafld)), 0.e0 ) - ncS.sosfldow / SS.isel(z=0)
    else:
      print('    WARNING :   No data found for WFOSICOR  -->  filled with NaNs')
      WFOSICOR = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
@@ -419,6 +445,9 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
 
    nxy=(jmax-jmin+1)*(imax-imin+1)
 
+   newdepth=depTUV.values
+   newdepth[0]=0.0 # so that 1st level is taken at the surface without extrapolation
+
    ds = xr.Dataset(
       {
        "SO":        (["time", "z", "sxy"], np.reshape( SO.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,mz,nxy)) ),
@@ -466,7 +495,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
       },
       coords={
       "time": ncT.time.values,
-      "z": depTUV.values
+      "z": newdepth
       },
       attrs={
       "original_minlat": domain_minlat,
@@ -475,6 +504,8 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
       "original_maxlon": domain_maxlon
       },
    )
+
+   #ds=ds.chunk({'time':1})
 
    print('    Load duration: ',datetime.now() - startTime)
 

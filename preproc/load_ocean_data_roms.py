@@ -16,10 +16,12 @@ def load_oce_mod_roms(files_T='ROMS_all.nc',\
                       files_I='dummy',\
                       files_SRF='dummy',\
                       files_M='dummy',\
-                      rho0=1026.0, teos10=False, region='Amundsen' ):
+                      rho0=1026.0, teos10=False, region='Amundsen', parallel=False ):
    """ Read ROMS outputs and define an xarray dataset containing 
        all variables required in MISOMIP2. It automatically detects
        whether coordinates are stereographic or lon-lat.
+
+       Input:
 
        files_T: file or list of files containing the temperature and related variables [default='ROMS_all.nc']
        files_S: file or list of files containing the salinity variable [default=files_T]
@@ -35,6 +37,11 @@ def load_oce_mod_roms(files_T='ROMS_all.nc',\
 
              =True  -> assumes the nemo outputs are in CT and AS and convert to PT and PS
         
+       parallel: If True, the open and preprocess steps of this function will be performed in parallel
+
+       Output:
+          xarray dataset of coordinates ("time", "z", "sxy") (sxy= one-dimensionalized horizontal space)
+
        Example1:
           ds = load_oce_mod_roms()
 
@@ -61,13 +68,13 @@ def load_oce_mod_roms(files_T='ROMS_all.nc',\
    if ( files_M == 'dummy' ):
       files_M = files_T
 
-   ncT = xr.open_mfdataset(files_T,decode_coords=False) ; ncT=ncT.rename({'ocean_time':'time'})
-   ncS = xr.open_mfdataset(files_S,decode_coords=False) ; ncS=ncS.rename({'ocean_time':'time'})
-   ncU = xr.open_mfdataset(files_U,decode_coords=False) ; ncU=ncU.rename({'ocean_time':'time'})
-   ncV = xr.open_mfdataset(files_V,decode_coords=False) ; ncV=ncV.rename({'ocean_time':'time'})
-   ncI = xr.open_mfdataset(files_I,decode_coords=False) ; ncI=ncI.rename({'ocean_time':'time'})
-   ncSRF = xr.open_mfdataset(files_SRF,decode_coords=False) ; ncSRF=ncSRF.rename({'ocean_time':'time'})
-   ncM = xr.open_mfdataset(files_M,decode_coords=False)
+   ncT = xr.open_mfdataset(files_T, decode_coords=False, parallel=parallel) ; ncT=ncT.rename({'ocean_time':'time'})
+   ncS = xr.open_mfdataset(files_S, decode_coords=False, parallel=parallel) ; ncS=ncS.rename({'ocean_time':'time'})
+   ncU = xr.open_mfdataset(files_U, decode_coords=False, parallel=parallel) ; ncU=ncU.rename({'ocean_time':'time'})
+   ncV = xr.open_mfdataset(files_V, decode_coords=False, parallel=parallel) ; ncV=ncV.rename({'ocean_time':'time'})
+   ncI = xr.open_mfdataset(files_I, decode_coords=False, parallel=parallel) ; ncI=ncI.rename({'ocean_time':'time'})
+   ncSRF = xr.open_mfdataset(files_SRF, decode_coords=False, parallel=parallel) ; ncSRF=ncSRF.rename({'ocean_time':'time'})
+   ncM = xr.open_mfdataset(files_M, decode_coords=False, parallel=parallel)
 
    [mtime,ms,my,mx] = ncT.temp.shape
 
@@ -265,7 +272,7 @@ def load_oce_mod_roms(files_T='ROMS_all.nc',\
    # sea-ice concentration [0-100]
    if ( "siconc" in ncI.data_vars ):
      SICONC = ncI.siconc*100.0
-     SICONC = SICONC.where( (~np.isnan(SICONC.values)) & (~np.isinf(SICONC.values)), 0.e0 )
+     SICONC = SICONC.where( (~np.isnan(SICONC)) & (~np.isinf(SICONC)), 0.e0 )
    else:
      print('    WARNING :   No data found for SICONC  -->  filled with NaNs')
      SICONC = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'eta_rho', 'xi_rho'] )   

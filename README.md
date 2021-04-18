@@ -59,6 +59,14 @@ On a laptop (16Gb, 2GHz), the NEMO test case took approximatively 1 minute to ru
 ### Adapt to your own ocean configuration
 
 You can copy interpolate_to_common_grid_oce.py and adapt it to your model. You need to adapt at least section 0 (General information), section 1 (Files and variables) and section 2 (Global attributes of output netcdf). For section1, ou may need to create or modify a load\_oce\_mod\_xxxx.py function similar to the one existing for NEMO and MITgcm if your model is not covered yet. If your model is already covered but variable names differ from what is understood by load\_oce\_mod\_xxxx.py, just add options for these variables in load\_oce\_mod\_xxxx.py and [make a pull request](https://opensource.com/article/19/7/create-pull-request-github) to upload it onto the official misomip2 repository (so that you keep this in case of updates).
+
+### Performance of ocean interpolation
+
+The scripts were written in best effort by non-experts in parallel applications of xarray and dask, so suggestions for improvements are welcome. We nonetheless found that the computing times were reasonable for several example of simulations:
+
+* Processing the "NEMO-AMUXL025" data (190x231x75 points, reduced to 107x203x75 when "loading nemo") on a 2.6 GHz computer required ~10 minutes and ~2.5Gb of memory per year of simulation (tests up to 10 years in a single call of interpolate\_to\_common\_grid\_oce.py show that both walltime and memory increase linearly). 
+
+* Processing the "NEMO-AMUXL12" data (687x567x75 points, reduced to xxxx when "loading nemo") on a 2.6 GHz computer required ~xx minutes and ~xxxGb of memory per year of simulation.
  
 ### Ice test cases
 
@@ -152,6 +160,8 @@ To load model outputs, either use an existing function or create a similar one i
 > all variables required in MISOMIP2. It automatically detects
 > whether coordinates are stereographic or lon-lat.
 >
+>  Input:  
+>
 >    files\_T: file or list of files containing the temperature and related variables [default='MITgcm\_all.nc']
 >
 >    files\_S: file or list of files containing the salinity variable [optional, default=files\_T]
@@ -171,6 +181,12 @@ To load model outputs, either use an existing function or create a similar one i
 >    teos10=False -> assumes the mitgcm outputs are in potential temperature & practical salinity (EOS80).<br/>
 >          =True  -> assumes the mitgcm outputs are in CT and AS and convert them to PT and PS.
 >
+>    parallel: If True, the open and preprocess steps of this function will be performed in parallel [optional, default=False]
+>
+>  Output: 
+>
+>    xarray dataset of coordinates ("time", "z", "sxy") (sxy is the one-dimensionalized horizontal space)
+>
 _Example_:
 ```bash
 dir= 'datadir/model/'
@@ -181,9 +197,28 @@ ds = load_oce_mod_mitgcm(files_T=ff, rho0=1028.0, region='Weddell')
 
 ### misomip2.preproc.load\_oce\_mod\_nemo(file\_mesh\_mask='mesh\_mask.nc', file\_bathy='bathy\_meter.nc', files\_gridT='nemo\_grid\_T.nc', files\_gridU='nemo\_grid\_U.nc', files\_gridV='nemo\_grid\_V.nc', files\_SBC='nemo\_flxT.nc', files\_ice='nemo\_icemod.nc', files\_BSF='nemo\_psi.nc', rho0=1026.0, teos10=False, region='Amundsen' ):
 > Read NEMO outputs and define an xarray dataset containing 
-> all variables required in MISOMIP2.
+> all variables required in MISOMIP2. It is adapted to NEMO's 
+> C-grid (including stretched grids like eORCA) and standard 
+> mesh/mask variables.
 >
-> Adapted to NEMO's C-grid and standard mesh/mask variables.
+>  Input:
+>
+>    file\_mesh\_mask: mesh mask file [default='mesh\_mask.nc']
+>
+>    file\_bathy: bathymetry file [optional, look for data in file\_mesh\_mask if not provided]
+>
+>    files\_gridT: file or list of files containing the temperature and salinity variables
+>
+>    files\_gridU: file or list of files containing the x-velocity and related variables
+>
+>    files\_gridV: file or list of files containing the y-velocity and related variables
+>
+>    files\_ice: file or list of files containing the sea-ice variables
+>
+>    files\_SBC: file or list of files containing the surface fluxes variables
+>
+>    files\_BSF: file or list of files containing the barotropic streamfunction calculated at U-points, e.g. 
+>        using the cdfpsi function which is part of the [CDFTOOLS](https://github.com/meom-group/CDFTOOLS).
 >
 >    rho0 corresponds to rau0 value in NEMO's eosbn2.F90 i.e. reference volumic mass [kg m-3]
 >
@@ -192,8 +227,11 @@ ds = load_oce_mod_mitgcm(files_T=ff, rho0=1028.0, region='Weddell')
 >
 >    region = 'Amundsen' (default) or 'Weddell'.
 >
->    NB: files\_BSF contains the barotropic streamfunction calculated at U-points, e.g. using
->        the cdfpsi function which is part of the [CDFTOOLS](https://github.com/meom-group/CDFTOOLS).
+>    parallel: If True, the open and preprocess steps of this function will be performed in parallel [optional, default=False]
+>
+>  Output:
+>
+>    xarray dataset of coordinates ("time", "z", "sxy") (sxy is the one-dimensionalized horizontal space)
 >
 _Example_:
 ```bash
@@ -212,43 +250,36 @@ ds = load_oce_mod_nemo(files_gridT=fT,files_gridU=fU,files_gridV=fV,files_SBC=fS
 
 The following functions are used for vertical and horizontal interpolation:
 
-### misomip2.preproc.vertical\_interp(original\_depth,interpolated\_depth):
-> Find upper and lower bound indices for simple vertical interpolation
->
->    original\_depth: 1d numpy array
->
->    interpolated\_depth: 1d numpy array
->
-_Example_:
-```bash
-[kinf,ksup] = mp.vertical_interp(model_depth,dep_misomip)
-```
-<br/>
-
 ### misomip2.preproc.horizontal\_interp( lat\_in\_1d, lon\_in\_1d, mlat\_misomip, mlon\_misomip, lat\_out\_1d, lon\_out\_1d, var\_in\_1d, weight=[], threshold=1.e20, skipna=False, filnocvx=False ):
 > Interpolates one-dimension data horizontally to a 2d numpy array reshaped to the misomip standard (lon,lat) format.
 >
 >    Method: triangular linear barycentryc interpolation.
 >
->    lon\_in\_1d, lat\_in\_1d: 1d longitude and latitude of data to interpolate
+>    Input:
 >
->    mlat\_misomip, mlon\_misomip: misomip grid size (nb points) alond latitude and longitude dimensions
+>       * lon\_in\_1d, lat\_in\_1d: 1d longitude and latitude of data to interpolate [xarray 1d data array]
+> 
+>       * mlat\_misomip, mlon\_misomip: misomip grid size (nb points) alond latitude and longitude dimensions
+> 
+>       * lon\_out\_1d, lat\_out\_1d: 1d longitude and latitude of the target misomip grid [numpy 1d data array]
 >
->    lon\_out\_1d, lat\_out\_1d: 1d longitude and latitude of the target misomip grid
+>       * var\_in\_1d: 1d input data (same dimension as lon\_in\_1d and lat\_in\_1d) [xarray 1d data array]
 >
->    var\_in\_1d: 1d input data (same dimension as lon\_in\_1d and lat\_in\_1d)
+>       * skipna = False to keep nans in interpolation, i.e. gives nan if any triangle node is nan [default]
 >
->    skipna = False to keep nans in interpolation, i.e. gives nan if any triangle node is nan [default]
+>                = True to find interpolation triangle nodes with non-nan values
 >
->           = True to find interpolation triangle nodes with non-nan values
+>       * filnocvx = True to use nearest-neighbor to fill non-convex areas, i.e. for which no triangulation is possible [default]
 >
->    filnocvx = True to use nearest-neighbor to fill non-convex areas, i.e. for which no triangulation is possible [default]
+>                  = False to fill non-convex areas with nans 
 >
->             = False to fill non-convex areas with nans 
+>       * weight = weights used for interpolation [optional, xarray data array]
 >
->    weight = weights used for interpolation [optional]
+>       * threshold = threshold below which weight value indicates a masked point [default=1.e20]
 >
->    threshold = threshold below which weight value indicates a masked point [default=1.e20]
+>    Output:
+>
+>       * numpy data array of dimension (mlat_misomip, mlon_misomip)
 >
 _Examples_:
 ```bash
