@@ -62,11 +62,11 @@ You can copy interpolate_to_common_grid_oce.py and adapt it to your model. You n
 
 ### Performance of ocean interpolation
 
-The scripts were written in best effort by non-experts in parallel applications of xarray and dask, so suggestions for improvements are welcome. We nonetheless found that the computing times were reasonable for several example of simulations:
+The scripts were written in best effort by non-experts in a way that should work for various grids, and suggestions that may boost perfromances are welcome. We nonetheless found that the computing times were acceptable for several example of simulations, the idea being that the higher the original model resolutoin, the shorter the period to be computed in a single call of interpolate\_to\_common\_grid\_oce.py. Here are some example of computing time:
 
-* Processing the "NEMO-AMUXL025" data (190x231x75 points, reduced to 107x203x75 when "loading nemo") on a 2.6 GHz computer required ~10 minutes and ~2.5Gb of memory per year of simulation (tests up to 10 years in a single call of interpolate\_to\_common\_grid\_oce.py show that both walltime and memory increase linearly). 
+* Processing the "NEMO-AMUXL025" data (231x190x75 points, reduced to 203x107x75 when "loading nemo") on a 2.6 GHz computer required ~10 minutes and ~2.5Gb of memory per year of simulation (tests up to 10 years in a single call of interpolate\_to\_common\_grid\_oce.py show that both walltime and memory increase linearly). 
 
-* Processing the "NEMO-AMUXL12" data (687x567x75 points, reduced to xxxx when "loading nemo") on a 2.6 GHz computer required ~xx minutes and ~xxxGb of memory per year of simulation.
+* Processing the "NEMO-AMUXL12" data (687x567x75 points, reduced to 623x286x75 when "loading nemo") on a 2.6 GHz computer required 1h22 minutes and a bit less than 16Gb of memory per year of simulation.
  
 ### Ice test cases
 

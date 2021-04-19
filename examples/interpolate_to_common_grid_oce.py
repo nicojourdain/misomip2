@@ -22,7 +22,6 @@ from datetime import datetime
 startTime = datetime.now()
 
 np.seterr(divide='ignore', invalid='ignore') # to avoid warning due to divide by zero
-np.seterr(divide='ignore', invalid='ignore')
 
 #--------------------------------------------------------------------------
 # 0- General information:

@@ -505,8 +505,6 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
       },
    )
 
-   #ds=ds.chunk({'time':1})
-
    print('    Load duration: ',datetime.now() - startTime)
 
    return ds
