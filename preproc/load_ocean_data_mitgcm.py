@@ -455,6 +455,17 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    newdepth=depTUV.values
    newdepth[np.argmin(newdepth)]=0.e0 # so that 1st level is taken at the surface without extrapolation
 
+   time_conv=ncT.time.dtype
+   print('time_conv : ',time_conv)
+   print('time int : ', ncT.time.astype(int).values)
+   print('time float : ', ncT.time.astype(float).values)
+   if ( time_conv == 'datetime64[ns]' ):
+     time_val = ncT.time.values # standard calendar 
+   else:
+     time_val = ncT.indexes['time'].to_datetimeindex().values # to enable dealing with non-standard calendar (e.g. noleap)
+   print('time_val : ',time_val.dtype)
+   print('time_val : ',time_val)
+
    ds = xr.Dataset(
       {
        "SO":        (["time", "z", "sxy"], np.reshape( SO.isel(XC=slice(imin,imax+1),YC=slice(jmin,jmax+1)).values, (mtime,mz,nxy)) ),
@@ -501,7 +512,7 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
        "depTUV":    (['z'], depTUV.values)
       },
       coords={
-      "time": ncT.time.values,
+      "time": time_val,
       "z": newdepth
       },
       attrs={

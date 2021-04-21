@@ -10,7 +10,7 @@ from datetime import datetime
 
 #====================================================================================
 def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
-                      file_bathy='dummy',\
+                      file_bathy='None',\
                       files_gridT='nemo_grid_T.nc',\
                       files_gridU='nemo_grid_U.nc',\
                       files_gridV='nemo_grid_V.nc',\
@@ -35,12 +35,13 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
 
          files_gridV: file or list of files containing the y-velocity and related variables
 
-         files_ice: file or list of files containing the sea-ice variables
+         files_ice: file or list of files containing the sea-ice variables [look for data in files_gridT if not provided]
 
-         files_SBC: file or list of files containing the surface fluxes variables
+         files_SBC: file or list of files containing the surface fluxes variables [look for data in files_gridT if not provided]
 
          files_BSF: file or list of files containing the barotropic streamfunction calculated at U-points, e.g. 
          using the cdfpsi function which is part of the [CDFTOOLS](https://github.com/meom-group/CDFTOOLS).
+         [look for data in files_gridU if not provided]
 
          rho0 corresponds to rau0 value in NEMO's eosbn2.F90 i.e. reference volumic mass [kg m-3]
 
@@ -71,21 +72,24 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
 
    startTime = datetime.now()
 
-   if ( file_bathy == 'dummy' ):
+   if ( file_bathy == 'None' ):
      file_bathy=file_mesh_mask
+   if ( files_BSF == 'None' ):
+     files_BSF=files_gridU
+   if ( files_ice == 'None' ):
+     files_ice=files_gridT
+   if ( files_SBC == 'None' ):
+     files_SBC=files_gridT
 
-   ncM = xr.open_dataset(file_mesh_mask,decode_coords=False) ; ncM=rename_dimensions(ncM); ncM=ncM.isel(time=0)
-   ncT = xr.open_mfdataset(files_gridT,decode_coords=False, parallel=parallel); ncT=rename_dimensions(ncT)
-   ncU = xr.open_mfdataset(files_gridU,decode_coords=False, parallel=parallel); ncU=rename_dimensions(ncU)
-   ncV = xr.open_mfdataset(files_gridV,decode_coords=False, parallel=parallel); ncV=rename_dimensions(ncV)
-   ncS = xr.open_mfdataset(files_SBC,decode_coords=False, parallel=parallel); ncS=rename_dimensions(ncS)
-   ncI = xr.open_mfdataset(files_ice,decode_coords=False, parallel=parallel); ncI=rename_dimensions(ncI)
-   ncP = xr.open_mfdataset(files_BSF,decode_coords=False, parallel=parallel); ncP=rename_dimensions(ncP)
-
-   if ( file_bathy == 'dummy' ):
-     print('    WARNING : file_bathy was not provided => assuming that bathymetry and ice draft can be found in file_mesh_mask.')
-   else:
-     ncB = xr.open_dataset(file_bathy,decode_coords=False) ; ncB=rename_dimensions(ncB)
+   # NB: as NEMO put _FillValues of zero where is it always zero and not a missing value -> do not use _FillValue (but disable scale/offset):
+   ncM = xr.open_dataset(file_mesh_mask,decode_coords=False,mask_and_scale=False) ; ncM=rename_dimensions(ncM); ncM=ncM.isel(time=0)
+   ncB = xr.open_dataset(file_bathy,decode_coords=False,mask_and_scale=False) ; ncB=rename_dimensions(ncB)
+   ncT = xr.open_mfdataset(files_gridT,decode_coords=False,mask_and_scale=False, parallel=parallel); ncT=rename_dimensions(ncT)
+   ncU = xr.open_mfdataset(files_gridU,decode_coords=False,mask_and_scale=False, parallel=parallel); ncU=rename_dimensions(ncU)
+   ncV = xr.open_mfdataset(files_gridV,decode_coords=False,mask_and_scale=False, parallel=parallel); ncV=rename_dimensions(ncV)
+   ncS = xr.open_mfdataset(files_SBC,decode_coords=False,mask_and_scale=False, parallel=parallel); ncS=rename_dimensions(ncS)
+   ncI = xr.open_mfdataset(files_ice,decode_coords=False,mask_and_scale=False, parallel=parallel); ncI=rename_dimensions(ncI)
+   ncP = xr.open_mfdataset(files_BSF,decode_coords=False,mask_and_scale=False, parallel=parallel); ncP=rename_dimensions(ncP)
 
    mtime = ncT.time.shape[0]
 
@@ -270,16 +274,16 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    # Sea surface height [m]
    if ( "zos" in ncS.data_vars ):
      ZOS = ncS.zos
-   elif ( "SSH" in ncS.data_vars ):
-     ZOS = ncS.SSH
+   elif ( "sossh" in ncS.data_vars ):
+     ZOS = ncS.sossh
    elif ( "ssh" in ncS.data_vars ):
      ZOS = ncS.ssh
    elif ( "sossheig" in ncS.data_vars ):
      ZOS = ncS.sossheig
    elif ( "zos" in ncT.data_vars ):
      ZOS = ncT.zos
-   elif ( "SSH" in ncT.data_vars ):
-     ZOS = ncT.SSH
+   elif ( "sossh" in ncT.data_vars ):
+     ZOS = ncT.sossh
    elif ( "ssh" in ncT.data_vars ):
      ZOS = ncT.ssh
    elif ( "sossheig" in ncT.data_vars ):
@@ -335,7 +339,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    # sea-ice concentration [0-100]
    if ( "siconc" in ncI.data_vars ):
      SICONC = ncI.siconc*100.0
-     SICONC = SICONC.where( (~np.isnan(SICONC)) & (~np.isinf(SICONC)), 0.e0 )
+     #SICONC = SICONC.where( (~np.isnan(SICONC)) & (~np.isinf(SICONC)), 0.e0 )
    else:
      print('    WARNING :   No data found for SICONC  -->  filled with NaNs')
      SICONC = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )   
@@ -373,6 +377,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
      HFDS = ncS.qt_oce + ncS.qisf # ice-shelf heat flux not included in qt_oce in tested NEMO versions
    elif ( ("sohefldo" in ncS.data_vars) & ("qoceisf_cav" in ncS.data_vars) ):
      HFDS = ncS.sohefldo + ncS.qoceisf_cav # not included in sohefldo in tested NEMO versions
+     #HFDS = ncS.sohefldo.where( ~np.isnan(ncS.sohefldo), 0.e0) + ncS.qoceisf_cav.where( ~np.isnan(ncS.qoceisf_cav), 0.e0) # not included in sohefldo in tested NEMO versions
    else:
      print('    WARNING :   No data found for HFDS  -->  filled with NaNs')
      HFDS = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
@@ -380,11 +385,14 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    # Water flux entering the ocean due to sea-ice (melting-freezing) and surface correction (SSS restoring)
    # (= fsitherm + wfocorr in Griffies 2016 section K2) [kg m-2 s-1]
    if ( ("erp" in ncS.data_vars) & ("saltflx" in ncS.data_vars) ):
-     WFOSICOR = ncS.erp.where( (~np.isnan(ncS.erp)), 0.e0 ) - ncS.saltflx / SS.isel(z=0) # NB: saltflx unit attribute is wrong in nico's output, it is actually in [1e-3 kg m-2 s-1]
+     WFOSICOR = ncS.erp.where( (np.abs(ncS.erp)<1.e2) & (maskT.isel(z=0) == 1), 0.e0 ) - ncS.saltflx.where( (maskT.isel(z=0) == 1), 0.e0 ) \
+                / SS.isel(z=0).where( (maskT.isel(z=0) == 1), 1.e0 ) # NB: saltflx unit attribute is wrong in nico's output, it is actually in [1e-3 kg m-2 s-1]
    elif ( ("erp" in ncS.data_vars) & ("sfx" in ncI.data_vars) ):
-     WFOSICOR = ncS.erp.where( (~np.isnan(ncS.erp)), 0.e0 ) - ncI.sfx/86400.0 / SS.isel(z=0)
+     WFOSICOR = ncS.erp.where( (np.abs(ncS.erp)<1.e2) & (maskT.isel(z=0) == 1), 0.e0 ) - ncI.sfx.where( (maskT.isel(z=0) == 1), 0.e0 )/86400.0 \
+                / SS.isel(z=0).where( (maskT.isel(z=0) == 1), 1.e0 )
    elif ( ("sowafld" in ncS.data_vars) & ("sosfldow" in ncS.data_vars) ):
-     WFOSICOR = ncS.sowafld.where( (~np.isnan(ncS.sowafld)), 0.e0 ) - ncS.sosfldow / SS.isel(z=0)
+     WFOSICOR = ncS.sowafld.where( (np.abs(ncS.sowafld)<1.e2) & (maskT.isel(z=0) == 1), 0.e0 ) - ncS.sosfldow.where( (maskT.isel(z=0) == 1), 0.e0 ) \
+                / SS.isel(z=0).where( (maskT.isel(z=0) == 1), 1.e0 )
    else:
      print('    WARNING :   No data found for WFOSICOR  -->  filled with NaNs')
      WFOSICOR = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
@@ -395,7 +403,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    if ( "empmr" in ncS.data_vars ):
      WFOATRLI = - ncS.empmr + FICESHELF
    elif ( "sowaflup" in ncS.data_vars ):
-     WFOATRLI = - ncS.sowaflup - WFOSICOR + FICESHELF
+     WFOATRLI = - ncS.sowaflup.where( (maskT.isel(z=0) == 1), 0.e0 ) - WFOSICOR + FICESHELF
    else:
      print('    WARNING :   No data found for WFOATRLI  -->  filled with NaNs')
      WFOATRLI = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
@@ -448,6 +456,12 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
    newdepth=depTUV.values
    newdepth[0]=0.0 # so that 1st level is taken at the surface without extrapolation
 
+   time_conv=ncT.time.dtype
+   if ( time_conv == 'datetime64[ns]' ):
+     time_val = ncT.time.values # standard calendar 
+   else:
+     time_val = ncT.indexes['time'].to_datetimeindex().values # to enable dealing with non-standard calendar (e.g. noleap)
+
    ds = xr.Dataset(
       {
        "SO":        (["time", "z", "sxy"], np.reshape( SO.isel(x=slice(imin,imax+1),y=slice(jmin,jmax+1)).values, (mtime,mz,nxy)) ),
@@ -494,7 +508,7 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
        "depTUV":    (['z'], depTUV.values)
       },
       coords={
-      "time": ncT.time.values,
+      "time": time_val,
       "z": newdepth
       },
       attrs={
@@ -504,6 +518,10 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
       "original_maxlon": domain_maxlon
       },
    )
+
+   # fill all nans with a non-nan value (useful to keep points in 
+   # triangular interpolation, even if they will be masked):
+   #ds=ds.fillna(-99999.99)
 
    print('    Load duration: ',datetime.now() - startTime)
 

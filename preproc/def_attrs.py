@@ -302,6 +302,8 @@ def rename_dimensions(ds):
      ds=ds.rename({'depth':'z'})
    if ( "level" in ds.dims ):
      ds=ds.rename({'level':'z'})
+   if ( "nav_lev" in ds.dims ):
+     ds=ds.rename({'nav_lev':'z'})
    if ( "deptht" in ds.dims ):
      ds=ds.rename({'deptht':'z'})
    if ( "depthu" in ds.dims ):

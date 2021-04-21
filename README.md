@@ -213,12 +213,13 @@ ds = load_oce_mod_mitgcm(files_T=ff, rho0=1028.0, region='Weddell')
 >
 >    files\_gridV: file or list of files containing the y-velocity and related variables
 >
->    files\_ice: file or list of files containing the sea-ice variables
+>    files\_ice: file or list of files containing the sea-ice variables [look for data in files\_gridT if not provided]
 >
->    files\_SBC: file or list of files containing the surface fluxes variables
+>    files\_SBC: file or list of files containing the surface fluxes variables [look for data in files\_gridT if not provided]
 >
 >    files\_BSF: file or list of files containing the barotropic streamfunction calculated at U-points, e.g. 
 >        using the cdfpsi function which is part of the [CDFTOOLS](https://github.com/meom-group/CDFTOOLS).
+>        [look for data in files_gridU if not provided]
 >
 >    rho0 corresponds to rau0 value in NEMO's eosbn2.F90 i.e. reference volumic mass [kg m-3]
 >
