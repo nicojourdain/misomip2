@@ -19,8 +19,6 @@ All MISOMIP participants who want to contribute to this package are invited to f
 ### Install
 If you don't have a python environment yet, you can install anaconda following [this page](https://docs.anaconda.com/anaconda/install/).
 
-This package may become an anaconda package at some stage, but it is not the case yet, and for now, here is the way to proceed:
-
 If these modules are not installed (check with ```conda list```), install them:
 ```bash
 conda install numpy xarray scipy
