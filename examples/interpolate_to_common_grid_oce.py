@@ -479,8 +479,6 @@ dsmiso3d = xr.Dataset(
     },
 )
 
-print('coords:',dsmiso3d.coords)
-
 mp.add_standard_attributes_oce(dsmiso3d,miss=missval)
 put_global_attrs(dsmiso3d, experiment=exp, avg_hor_res_73S=res_73S, original_sim_name=original_sim_name, \
                  ocean_model=model, institute=institute, \
@@ -612,6 +610,10 @@ print('  Execution time: ',datetime.now() - startTime)
 
 #--------------------------------------------------------------------------
 # 5a- Interpolate to common mooring location :
+#
+#     For this mooring, we take the closest grid point that is not under 
+#     an ice shelf (observational mooring in front of a real ice shelf
+#     can be located in the cavity of some models).
 
 # Characteristics of MISOMIP mooring:
 [lon_moor0d,lat_moor0d,dep_moor] = mp.generate_mooring_grid_oce(region=reg)
@@ -622,8 +624,7 @@ mdepmoor = np.size(dep_moor)
 #       scipy.spatial.qhull.QhullError: QH6214 qhull input error: not enough points(1) to construct initial simplex (need 4) 
 #       If it happens with your dataset, increase it further...
 #wdeg = 1.5 * np.sqrt( res_73S / 6.37e6 * 180. / np.pi / aa )
-wdeg = 10.0 * res_73S / ( 6.37e6 * np.pi / 180. )
-print('wdeg = ',wdeg)
+wdeg = 3.0 * res_73S / ( 6.37e6 * np.pi / 180. )
 lonmin_moor = np.min( lon_moor0d ) - wdeg/aa
 lonmax_moor = np.max( lon_moor0d ) + wdeg/aa
 latmin_moor = np.min( lat_moor0d ) - wdeg
@@ -644,31 +645,25 @@ openseafracT=LEVOFT.isel(z=0) # 100 only if open ocean point
 
 mtime = np.shape(oce.SO)[0]
 
-# mask showing the original domain (nan where interpolation of any of T, U, V grid is nan):
-DOMMSK_moor = np.squeeze(mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d, lon_moor0d*aa, oce.DOMMSKT.where(cond_mooT,drop=True) ))
+# Coordinates of closest point:
+indxy = ((lat_moor0d-latT.where(openseafracT >= 50.))**2+((lon_moor0d-lonT.where(openseafracT >= 50.))*aa)**2).argmin()
 
-# Depth of floating ice on MISOMIP grid (ice-shelf draft)
-DEPFLI_moor = np.squeeze( mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d, lon_moor0d*aa, oce.DEPFLI.where(cond_mooT,drop=True), \
-                                                weight=oce.SFTFLI.where(cond_mooT,drop=True), \
-                                                skipna=True, filnocvx=filmis, threshold=epsfr ) )
-DEPFLI_moor[ np.isnan(DOMMSK_moor) | np.isnan(DEPFLI_moor) ] = 0.e0 # will be replaced will missval later on
+print('Closest point of open sea near mooring of (lon,lat) = ',lon_moor0d,lat_moor0d)
+print('   is at model point of (lon,lat) = ',lonT.where(openseafracT >= 50.).isel(sxy=indxy).values, latT.where(openseafracT >= 50.).isel(sxy=indxy).values )
+DOMMSK_moor = oce.DOMMSKT.where(cond_mooT,drop=True).where(openseafracT >= 50.).isel(sxy=indxy).values
+DEPFLI_moor = oce.DEPFLI.where(cond_mooT,drop=True).where(openseafracT >= 50.).isel(sxy=indxy).values
+DEPFLI_moor[ np.isnan(DOMMSK_moor) ] = missval
+DEPTHO_moor = oce.DEPTHO.where(cond_mooT,drop=True).where(openseafracT >= 50.).isel(sxy=indxy).values
+DEPTHO_moor[ np.isnan(DOMMSK_moor) ] = missval
 
-# Ocean depth on MISOMIP grid (=nan where land or grounded ice or beyond model domain)
-DEPTHO_moor = np.squeeze(mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d, lon_moor0d*aa, oce.DEPTHO.where(cond_mooT,drop=True), \
-                                               weight=seafracT, skipna=True, filnocvx=filmis, threshold=epsfr ) )
-DEPTHO_moor[ np.isnan(DOMMSK_moor) | np.isnan(DEPTHO_moor) ] = 0.e0 # will be replaced with missval later on
-
-# vertical then horizontal interpolation of constant 3d fields to common grid :
 tmp_LEVT = LEVOFT.interp(z=dep_moor)
-
 LEVOF_moor = np.zeros((mdepmoor))
 for kk in np.arange(mdepmoor):
-  tzz = np.squeeze( mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d, lon_moor0d*aa, tmp_LEVT[kk,:] ) )
-  if ( np.isnan(DOMMSK_moor) ):
-     tzz = missval
+  tzz = tmp_LEVT[kk,:].where(openseafracT >= 50.).isel(sxy=indxy).values
+  tzz[ np.isnan(DOMMSK_moor) ] = missval
   LEVOF_moor[kk] = tzz
 
-# vertical interpolation of T, S, U, V to common vertical grid :
+# vertical interpolation of T, S to common vertical grid :
 tmpxS = LEVOFT*oce.SO.where(cond_mooT,drop=True)
 tmp_SS = tmpxS.interp(z=dep_moor) / tmp_LEVT
 tmpxT = LEVOFT*oce.THETAO.where(cond_mooT,drop=True)
@@ -679,20 +674,13 @@ THETAO_moor = np.zeros((mtime,mdepmoor)) + missval
 for ll in np.arange(mtime):
   for kk in np.arange(mdepmoor):
 
-    condkk = ( (LEVOF_moor[kk] < epsfr) | (np.isnan(DOMMSK_moor)) )
-
-    tzz = np.squeeze(mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d, lon_moor0d*aa, tmp_SS.isel(time=ll,z=kk), \
-                                           weight=tmp_LEVT.isel(z=kk), skipna=True, filnocvx=filmis, threshold=epsfr ) )
-    tzz[ condkk | (np.isnan(tzz)) ] = missval
+    tzz = tmp_SS[kk,:,ll].where(openseafracT >= 50.).isel(sxy=indxy).values
+    tzz[ np.isnan(DOMMSK_moor) | (LEVOF_moor[kk] < epsfr) ] = missval
     SO_moor[ll,kk] = tzz
 
-    tzz = np.squeeze(mp.horizontal_interp( latT, lonT*aa, 1, 1, lat_moor0d, lon_moor0d*aa, tmp_TT.isel(time=ll,z=kk), \
-                                           weight=tmp_LEVT.isel(z=kk), skipna=True, filnocvx=filmis, threshold=epsfr ) )
-    tzz[ condkk | (np.isnan(tzz)) ] = missval
+    tzz = tmp_TT[kk,:,ll].where(openseafracT >= 50.).isel(sxy=indxy).values
+    tzz[ np.isnan(DOMMSK_moor) | (LEVOF_moor[kk] < epsfr) ] = missval
     THETAO_moor[ll,kk] = tzz
-
-DEPFLI_moor[ DEPFLI_moor==0.e0 ] = missval
-DEPTHO_moor[ np.isnan(DOMMSK_moor) | (DEPTHO_moor==0.) ] = missval
 
 #--------------------------------------------------------------------------
 # 5b- Create new xarray dataset and save to netcdf

@@ -377,7 +377,6 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
      HFDS = ncS.qt_oce + ncS.qisf # ice-shelf heat flux not included in qt_oce in tested NEMO versions
    elif ( ("sohefldo" in ncS.data_vars) & ("qoceisf_cav" in ncS.data_vars) ):
      HFDS = ncS.sohefldo + ncS.qoceisf_cav # not included in sohefldo in tested NEMO versions
-     #HFDS = ncS.sohefldo.where( ~np.isnan(ncS.sohefldo), 0.e0) + ncS.qoceisf_cav.where( ~np.isnan(ncS.qoceisf_cav), 0.e0) # not included in sohefldo in tested NEMO versions
    else:
      print('    WARNING :   No data found for HFDS  -->  filled with NaNs')
      HFDS = xr.DataArray( np.zeros((mtime,my,mx))*np.nan, dims=['time', 'y', 'x'] )
@@ -518,10 +517,6 @@ def load_oce_mod_nemo(file_mesh_mask='mesh_mask.nc',\
       "original_maxlon": domain_maxlon
       },
    )
-
-   # fill all nans with a non-nan value (useful to keep points in 
-   # triangular interpolation, even if they will be masked):
-   #ds=ds.fillna(-99999.99)
 
    print('    Load duration: ',datetime.now() - startTime)
 

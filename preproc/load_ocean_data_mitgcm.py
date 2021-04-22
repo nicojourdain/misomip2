@@ -456,15 +456,10 @@ def load_oce_mod_mitgcm(files_T='MITgcm_all.nc',\
    newdepth[np.argmin(newdepth)]=0.e0 # so that 1st level is taken at the surface without extrapolation
 
    time_conv=ncT.time.dtype
-   print('time_conv : ',time_conv)
-   print('time int : ', ncT.time.astype(int).values)
-   print('time float : ', ncT.time.astype(float).values)
    if ( time_conv == 'datetime64[ns]' ):
      time_val = ncT.time.values # standard calendar 
    else:
      time_val = ncT.indexes['time'].to_datetimeindex().values # to enable dealing with non-standard calendar (e.g. noleap)
-   print('time_val : ',time_val.dtype)
-   print('time_val : ',time_val)
 
    ds = xr.Dataset(
       {

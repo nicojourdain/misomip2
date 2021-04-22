@@ -50,11 +50,15 @@ We provide 2 months of raw outputs from NEMO and MITGCM (Amundsen Sea configurat
 python interpolate_to_common_grid_oce.py
 ```
 This should create the following files:
-* Oce3d\_NEMO_test\_A1.nc
-* OceMoor\_NEMO\_test_A1.nc
-* OceSec\_NEMO\_test\_A1.nc
+* Oce3d\_NEMO3.6-IGE-CNRS-UGA\_a\_Ocean-A1\_201001-201002.nc
+* OceSec\_NEMO3.6-IGE-CNRS-UGA\_a\_Ocean-A1\_201001-201002.nc
+* OceMoor\_NEMO3.6-IGE-CNRS-UGA\_a\_Ocean-A1\_201001-201002.nc
 
-On a laptop (16Gb, 2GHz), the NEMO test case took approximatively 1 minute to run and the MITGCM case took approximatively 4 minutes. Note that the test cases do not cover the entire MISOMIP2 domain and that all variables are not defined in Oce3d\_MITGCM_test\_A1.nc, in particular surface and sea-ice variables, while the NEMO test case includes all variables.
+On a laptop (16Gb, 2GHz), the test cases took the following durations:
+* NEMO\_test : 48s (smaller than MISOMIP2 domain; all variables calculated). 
+* MITGCM_test : 3min 30s (smaller than MISOMIP2 domain; no sea-ice or surface fluxes).
+* eORCA025_test : 2min 30s (global simulation; most variables calculated).
+* ROMS_test : 6min 20s (circum-Antarctic simulation (sigma coordinates); no sea-ice or surface fluxes).
 
 ### Adapt to your own ocean configuration
 
