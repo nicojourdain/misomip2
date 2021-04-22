@@ -1,5 +1,5 @@
 # misomip2
-A python package to postprocess model outputs to standard MISOMIP2 format and to analyse MISOMIP2 multi-model outputs.
+A python package to process model outputs to standard MISOMIP2 format and to analyse MISOMIP2 multi-model outputs.
 
 This package is written for python3 and largely based on [xarray](http://xarray.pydata.org) and [scipy.interpolate](https://docs.scipy.org/doc/scipy/reference/interpolate.html).
 
