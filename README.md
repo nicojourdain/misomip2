@@ -3,6 +3,11 @@ A python package to postprocess model outputs to standard MISOMIP2 format and to
 
 This package is written for python3 and largely based on [xarray](http://xarray.pydata.org) and [scipy.interpolate](https://docs.scipy.org/doc/scipy/reference/interpolate.html).
 
+This package contains:
+* **preproc** : contains functions used to pre-process model outputs, i.e. to interpolate them to the MISOMIP2 grids and write files with standard attributes.
+* **examples** : contains scripts that can be used on provided test cases (e.g. to check that your python environment works) and that can be adapted to your specific output files.
+* **analysis** : (TO BE COMPLETED) contains functions used to analyse multiple model outputs that were previously interpolated to the common grids.
+
 ### Contributors
 * Nicolas C. Jourdain (IGE, CNRS-UGA, Grenoble, France)
 * Jan De Rydt (University Northumbria Newcastle, UK)
@@ -26,7 +31,7 @@ conda install -c conda-forge gsw
 # or conda install -c conda-forge/label/cf202003 gsw
 ```
 
-Then, to clone the misomip2 package and enable the import of misomip2 functions from anywhere, do:
+Then, clone the misomip2 package :
 
 ```bash
 git clone https://github.com/nicojourdain/misomip2.git
@@ -39,13 +44,50 @@ You can update the cloned directory anytime with ```git pull``` executed in that
 ----------
 ----------
 
-# Examples
+# Examples of ocean interpolation to the MISOMIP2 grids
 
-We provide a test case so that users can check that this package works well in their python environment before adapting it to their model outputs. People who use the misomip2 package to interpolate their model results to the MISOMIP2 grids are invited to provide their scripts, in particular if their model is not covered yet.
+We provide a few test cases so that users can check that this package works well in their python environment before adapting it to their model outputs. These test cases are also used by the developers of this package to check that it is working with various types of model. 
 
-### Ocean test cases 
+For simplicity, we describe the example directly used in the misomip2 repositories, but the interpolation script can be run from anywhere.
 
-We provide 2 months of raw outputs from NEMO and MITGCM (Amundsen Sea configurations) in ```misomip2/examples/models/oce/```. To interpolate these model outputs to the standard MISOMIP2 grids, edit **interpolate_to_common_grid_oce.py** and edit the path where you cloned the misomip2 github repository (currently ```sys.path.append("/Users/jourdain/MY_SCRIPTS")```), which allows you to run it from anywhere, then select ```model='NEMO_test'``` (you can try ```model='MITGCM_test'``` just after). Execute it as:
+```bash
+cd misomip2/examples
+vi interpolate_to_common_grid_oce.py # or using any other text editor than vi
+```
+The first thing to change in this file is the directory in which the misomip2 package has been cloned, i.e. change this path:
+```python
+sys.path.append("/Users/jourdain/MY_PACKAGES")
+```
+The second thing is to choose the test case you want to run by uncommenting one of these lines:
+```python
+test_case='NEMO_test'
+#test_case='MITGCM_test'
+#test_case='ROMS_test'
+#test_case='eORCA025_test'
+```
+We recommend starting with 'NEMO_test' which is the smallest in size and fastest to run.
+
+To make it work, you need to download the input files for the tes cases, which are all provided on [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4709851.svg)](https://doi.org/10.5281/zenodo.4709851). You can get the files directly using wget as:
+```bash
+cd test_cases/oce
+wget https://zenodo.org/record/4709851/files/NEMO_test.zip
+unzip NEMO_test.zip && rm NEMO_test.zip
+```
+
+Other test cases can be downloaded as follows (note the file sizes):
+```bash
+# MITGCM_test (242M):
+wget https://zenodo.org/record/4709851/files/MITGCM_test.zip
+unzip MITGCM_test.zip && rm MITGCM_test.zip
+# eORCA025_test (7.8G):
+wget https://zenodo.org/record/4709851/files/eORCA025_test.zip
+unzip eORCA025_test.zip && rm eORCA025_test.zip
+# ROMS_test (257M):
+wget https://zenodo.org/record/4709851/files/ROMS_test.zip
+unzip ROMS_test.zip && rm ROMS_test.zip
+```
+
+Then, execute the script as follows:
 ```bash
 python interpolate_to_common_grid_oce.py
 ```
@@ -62,7 +104,7 @@ On a laptop (16Gb, 2GHz), the test cases took the following durations:
 
 ### Adapt to your own ocean configuration
 
-You can copy interpolate_to_common_grid_oce.py and adapt it to your model. You need to adapt at least section 0 (General information), section 1 (Files and variables) and section 2 (Global attributes of output netcdf). For section1, ou may need to create or modify a load\_oce\_mod\_xxxx.py function similar to the one existing for NEMO and MITgcm if your model is not covered yet. If your model is already covered but variable names differ from what is understood by load\_oce\_mod\_xxxx.py, just add options for these variables in load\_oce\_mod\_xxxx.py and [make a pull request](https://opensource.com/article/19/7/create-pull-request-github) to upload it onto the official misomip2 repository (so that you keep this in case of updates).
+You can copy interpolate_to_common_grid_oce.py and adapt it to your model. You need to adapt at least section 0 (General information), section 1 (Files and variables) and section 2 (Global attributes of output netcdf). For section 1, you may need to create or modify a load\_oce\_mod\_xxxx.py function similar to the one existing for NEMO, MITgcm and ROMS if your model is not covered yet. If your model is already covered but variable names differ from what is understood by load\_oce\_mod\_xxxx.py, just add options for these variables in load\_oce\_mod\_xxxx.py and [make a pull request](https://opensource.com/article/19/7/create-pull-request-github) to upload it onto the official misomip2 repository (so that you keep this in case of updates).
 
 ### Performance of ocean interpolation
 

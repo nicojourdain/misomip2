@@ -34,7 +34,7 @@ test_case='ROMS_test'
 
 reg='Amundsen' # 'Amundsen' or 'Weddell'
 
-data_dir='models/oce/'+test_case
+data_dir='test_cases/oce/'+test_case
 
 missval=9.969209968386869e36 # missing value in created netcdf files
 
