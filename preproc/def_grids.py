@@ -57,8 +57,11 @@ def generate_section_grid_oce(region='Amundsen',section=1):
       region: 'Amundsen' (default), 'Weddell'
 
       section: 1 (default) -> Pine Island Trough for Amundsen
-                           -> xxxxxxxxxxxxxxxxxx for Weddell
+                           -> Filchner Ice Shelf front for Weddell
                2           -> Dotson Trough for Amundsen
+                           -> Ronne Ice Shelf front for Weddell
+               3           -> /not defined/ for Amundsen
+                           -> section at 76degS for Weddell
 
       exemple: [lon,lat,depth]=generate_section_grid_oce(region='Amundsen')
    """
@@ -173,26 +176,35 @@ def generate_section_grid_oce(region='Amundsen',section=1):
    return [longitude,latitude,depth]
 
 #====================================================================================================
-def generate_mooring_grid_oce(region='Amundsen'):
+def generate_mooring_grid_oce(region='Amundsen',mooring=1):
    """Generates (longitude, latitude, depth) of the common MISOMIP2 mooring
 
-      region: 'Amundsen' (default), 'WeddellShelf', 'WeddellGyre'
+      region: 'Amundsen' (default), 'Weddell'
+
+      mooring: 1 -> Pine Island Ice Shelf for Amundsen
+               1 -> AWI_252 for Weddell
+               2 -> AWI_253 for Weddell
+               3 -> AWI_254 for Weddell
 
       exemple: [lon,lat,depth]=generate_mooring_grid_oce(region='Amundsen')
    """
 
-   if ( region == 'Amundsen' ):
+   if ( region == 'Amundsen' & mooring == 1 ): # PIG
      longitude=np.array([ -102. ])
      latitude=np.array([ -75. ])
      depth=np.arange(10.,1210.,10.)
-   elif ( region == 'WeddellShelf' ):
-     longitude=np.array([ -45. ]) # to update
-     latitude=np.array([ -76. ]) # to update
-     depth=np.arange(10.,1210.,10.) # to update
-   elif ( region == 'WeddellGyre' ):
-     longitude=np.array([ -45. ]) # to update
-     latitude=np.array([ -76. ]) # to update
-     depth=np.arange(10.,1210.,10.) # to update
+   elif ( region == 'Weddell' & mooring == 1 ): # AWI_252
+     longitude=np.array([ -30.47025 ])
+     latitude=np.array([ -76.09135 ])
+     depth=np.array([335.155716177651, 421.198718872697])
+   elif ( region == 'Weddell' & mooring == 2 ): # AWI_253
+     longitude=np.array([ -30.99475 ])
+     latitude=np.array([ -76.0459 ])
+     depth=np.array([348.910332481771, 433.794506934268])
+   elif ( region == 'Weddell' & mooring == 3 ): # AWI_254
+     longitude=np.array([ -31.48375 ]) 
+     latitude=np.array([ -75.9624 ]) 
+     depth=np.array([ 553.0090827338 ])
    else:
      sys.exit("~!@#$%^* error : region is not defined, choose either 'Amundsen' or 'Weddell'")
 
