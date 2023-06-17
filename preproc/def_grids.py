@@ -181,7 +181,7 @@ def generate_mooring_grid_oce(region='Amundsen',mooring=1):
 
       region: 'Amundsen' (default), 'Weddell'
 
-      mooring: 1 -> Pine Island Ice Shelf for Amundsen
+      mooring: 1 -> BSE-ISTAR (Pine Island) for Amundsen
                1 -> AWI_252 for Weddell
                2 -> AWI_253 for Weddell
                3 -> AWI_254 for Weddell
@@ -190,9 +190,9 @@ def generate_mooring_grid_oce(region='Amundsen',mooring=1):
    """
 
    if ( region == 'Amundsen' & mooring == 1 ): # PIG
-     longitude=np.array([ -102. ])
-     latitude=np.array([ -75. ])
-     depth=np.arange(10.,1210.,10.)
+     longitude=np.array([ -102.15437 ])
+     latitude=np.array([ -75.05528 ])
+     depth=np.arange(300.,821.,1.)
    elif ( region == 'Weddell' & mooring == 1 ): # AWI_252
      longitude=np.array([ -30.47025 ])
      latitude=np.array([ -76.09135 ])
